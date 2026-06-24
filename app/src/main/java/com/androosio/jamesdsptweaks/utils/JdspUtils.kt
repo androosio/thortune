@@ -6,6 +6,9 @@ import android.content.Intent
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
 
+    /** Magisk module id of the bundled jdsp_v6.4-trimmed.zip (see its module.prop). */
+    const val MAGISK_MODULE_ID = "ainur_jamesdsp"
+
     /**
      * Copy the bundled JamesDSP preset backup into the Downloads folder so the user can
      * import it from inside the JamesDSP Manager app.
@@ -27,6 +30,18 @@ object JdspUtils {
 
     fun hasJdspPackage(context: Context): Boolean {
         return RootUtils.isPackageInstalled(context, JDSP_PACKAGE_NAME)
+    }
+
+    /**
+     * True if the JamesDSP Magisk module is already present. Requires root, so this issues a
+     * root command; returns false on non-rooted devices or if the check fails.
+     */
+    fun isMagiskModuleInstalled(context: Context): Boolean {
+        val result = RootUtils.runRootCommand(
+            context,
+            "[ -d /data/adb/modules/$MAGISK_MODULE_ID ] && echo 1 || echo 0"
+        )
+        return result?.trim() == "1"
     }
 
     /** Launch the installed JamesDSP Manager UI. Returns false if it isn't installed. */
