@@ -1,6 +1,7 @@
 package com.androosio.jamesdsptweaks.utils
 
 import android.content.Context
+import android.content.Intent
 
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
@@ -26,6 +27,15 @@ object JdspUtils {
 
     fun hasJdspPackage(context: Context): Boolean {
         return RootUtils.isPackageInstalled(context, JDSP_PACKAGE_NAME)
+    }
+
+    /** Launch the installed JamesDSP Manager UI. Returns false if it isn't installed. */
+    fun openJdspManager(context: Context): Boolean {
+        val intent = context.packageManager.getLaunchIntentForPackage(JDSP_PACKAGE_NAME)
+            ?: return false
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+        return true
     }
 
     /** Install the bundled JamesDSP Manager APK (user confirms via the system installer). */

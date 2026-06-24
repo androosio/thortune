@@ -111,6 +111,19 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 ) {
                     Text("Install JamesDSP Manager", style = MaterialTheme.typography.titleSmall)
                 }
+
+                Spacer(modifier = Modifier.padding(PaddingValues(0.dp, 8.dp, 0.dp, 0.dp)))
+
+                Button(
+                    modifier = Modifier.width(BUTTON_WIDTH),
+                    onClick = {
+                        if (!JdspUtils.openJdspManager(context)) {
+                            Toast.makeText(context, "Install JamesDSP Manager first", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                ) {
+                    Text("Open JamesDSP", style = MaterialTheme.typography.titleSmall)
+                }
             }
 
             Spacer(modifier = Modifier.padding(16.dp))
