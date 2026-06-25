@@ -100,5 +100,11 @@ killall -q mediaserver
 # Enabled JamesDSP
 pm enable james.dsp
 
+# Wait for audioserver to respawn with the freshly-mounted effect chain before
+# launching the engine. Without this, EngineLauncherActivity tries to attach to
+# the JamesDSP effect before audioserver has reloaded audio_effects.conf and
+# flashes an attach-error toast on every boot.
+sleep 3
+
 # Start JamesDSP app to trigger plugin
 am start james.dsp/me.timschneeberger.rootlessjamesdsp.activity.EngineLauncherActivity

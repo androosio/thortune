@@ -1,0 +1,337 @@
+package com.androosio.thortune.ui
+
+import android.widget.Toast
+import com.androosio.thortune.utils.JdspUtils
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+
+private enum class Destination(val label: String, val icon: ImageVector) {
+    Display("Display", Icons.Filled.Contrast),
+    Audio("Audio", Icons.Filled.GraphicEq),
+    Settings("Settings", Icons.Filled.Settings),
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(appState: AppState) {
+    var selected by remember { mutableIntStateOf(0) }
+    val destinations = Destination.entries
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.Bolt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text("ThorTune", fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            )
+        },
+        bottomBar = {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                destinations.forEachIndexed { index, dest ->
+                    NavigationBarItem(
+                        selected = selected == index,
+                        onClick = { selected = index },
+                        icon = { Icon(dest.icon, contentDescription = dest.label) },
+                        label = { Text(dest.label) },
+                    )
+                }
+            }
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when (destinations[selected]) {
+                Destination.Audio -> AudioSection(appState)
+                Destination.Display -> DisplaySection(appState)
+                Destination.Settings -> SettingsSection(appState)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    icon: ImageVector,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.size(10.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun AudioSection(appState: AppState) {
+    val context = LocalContext.current
+
+    SectionCard("JamesDSP", Icons.Filled.GraphicEq) {
+        Text(
+            "System-wide audio DSP. Install the Manager app and enable the engine — they need " +
+                "each other, so set up both. " +
+                if (appState.isRooted) "The Magisk module needs a reboot to take effect."
+                else "The engine re-applies automatically on every boot.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (!appState.hasPServer && !appState.isRooted) {
+            Text(
+                "No root method detected on this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        // 1. Install (or reinstall) the Manager app — required before the engine is useful.
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { appState.installManager() },
+        ) {
+            Text(if (appState.managerInstalled) "Reinstall Manager" else "Install Manager")
+        }
+
+        // 2. Enable the engine: a runtime toggle on temporary root, a Magisk module on permanent root.
+        if (appState.isRooted) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !appState.moduleInstalled,
+                onClick = {
+                    appState.installModule()
+                    Toast.makeText(context, "JamesDSP module installed — please reboot", Toast.LENGTH_LONG).show()
+                },
+            ) {
+                Text(if (appState.moduleInstalled) "Module installed" else "Install JamesDSP module")
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (appState.jdspEnabled) "Engine on" else "Engine off",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = appState.jdspEnabled,
+                    // Enabling the engine is pointless until the Manager app is installed.
+                    enabled = appState.managerInstalled,
+                    onCheckedChange = { appState.toggleJdsp(it) },
+                )
+            }
+        }
+
+        // 3. Jump into the Manager to tune presets.
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = appState.managerInstalled,
+            onClick = {
+                if (!appState.openManager()) {
+                    Toast.makeText(context, "JamesDSP Manager is not installed", Toast.LENGTH_SHORT).show()
+                }
+            },
+        ) {
+            Text("Open JamesDSP")
+        }
+    }
+
+    SectionCard("Recommended preset", Icons.Filled.Star) {
+        Text(
+            "Joey's Retro Handhelds tuning for the Thor's speakers. Copy it to your Downloads " +
+                "folder, then import it from inside JamesDSP Manager.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                val ok = appState.copyRecommendedPreset()
+                Toast.makeText(
+                    context,
+                    if (ok) "Preset copied to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME}"
+                    else "Couldn't copy the preset",
+                    Toast.LENGTH_LONG,
+                ).show()
+            },
+        ) {
+            Text("Copy Joey's Retro Handhelds preset")
+        }
+        Text(
+            "To load it in JamesDSP Manager:\n" +
+                "1. Tap the three-dot menu (⋮) in the bottom-left → Presets.\n" +
+                "2. Tap Add → Import.\n" +
+                "3. Select ${JdspUtils.RECOMMENDED_PRESET_FILENAME} from your Downloads folder.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun DisplaySection(appState: AppState) {
+    SectionCard("Display saturation", Icons.Filled.Contrast) {
+        if (!appState.saturationSupported) {
+            Text(
+                "Privileged access isn't available, so saturation can't be changed on this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            return@SectionCard
+        }
+
+        Text(
+            "Tune the panel's colour intensity. 100% is stock; 80% is recommended.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Text(
+            "${(appState.saturation * 100).roundToInt()}%",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        Slider(
+            value = appState.saturation,
+            onValueChange = { appState.previewSaturation(it) },
+            onValueChangeFinished = { appState.applySaturation(appState.saturation) },
+            valueRange = 0f..2f,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { appState.applySaturation(0.8f) }) {
+                Text("Use recommended (80%)")
+            }
+            TextButton(onClick = { appState.resetSaturation() }) {
+                Text("Reset to stock (100%)")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSection(appState: AppState) {
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: "—"
+    }
+
+    SectionCard("Device", Icons.Filled.Bolt) {
+        StatusRow("Privileged access (PServer)", if (appState.hasPServer) "Available" else "Not found", appState.hasPServer)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        StatusRow(
+            "Root",
+            if (appState.isRooted) "Permanent (Magisk)" else if (appState.hasPServer) "Temporary (PServer)" else "None",
+            appState.isRooted || appState.hasPServer,
+        )
+    }
+
+    SectionCard("About", Icons.Filled.Settings) {
+        StatusRow("Version", versionName, true)
+        Text(
+            "Combines the JamesDSP system DSP and display-saturation tweaks for AYN Thor handhelds. " +
+                "GPLv2.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun StatusRow(label: String, value: String, ok: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+    Spacer(Modifier.height(0.dp))
+}

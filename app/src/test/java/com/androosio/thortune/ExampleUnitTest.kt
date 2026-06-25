@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks
+package com.androosio.thortune
 
 import org.junit.Test
 

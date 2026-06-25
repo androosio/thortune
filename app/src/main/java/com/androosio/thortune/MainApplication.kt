@@ -1,7 +1,7 @@
-package com.androosio.jamesdsptweaks
+package com.androosio.thortune
 
 import android.app.Application
-import com.androosio.jamesdsptweaks.utils.copyAssetFolderToFilesDir
+import com.androosio.thortune.utils.copyAssetFolderToFilesDir
 
 class MainApplication : Application() {
     override fun onCreate() {

@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks.utils
+package com.androosio.thortune.utils
 
 import android.content.Context
 import android.util.Log
@@ -7,10 +7,10 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 // context.filesDir
-// /data/user/0/com.androosio.jamesdsptweaks/files
+// /data/user/0/com.androosio.thortune/files
 
 // context.getExternalFilesDir(null)
-// /storage/emulated/0/Android/data/com.androosio.jamesdsptweaks/files
+// /storage/emulated/0/Android/data/com.androosio.thortune/files
 
 object FileUtils {
     private const val TAG = "FileUtils"

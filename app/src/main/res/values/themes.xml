@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.JamesDspTweaks" parent="android:Theme.Material.Light.NoActionBar" />
-    <!-- Base application theme. -->
-    <style name="Base.Theme.JamesDspTweaks" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <!-- Launch/window theme. Dark, true-black window background so the OLED panel doesn't
+         flash white before Compose draws the storm-night UI. -->
+    <style name="Theme.ThorEssentialTweaks" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>

@@ -1,8 +1,8 @@
 #!/system/bin/sh
 
-WORKING_PATH="/storage/emulated/0/Android/data/com.androosio.jamesdsptweaks/files"
+WORKING_PATH="/storage/emulated/0/Android/data/com.androosio.thortune/files"
 DOWNLOAD_PATH="/storage/emulated/0/Download"
-APPFILES_PATH="/data/user/0/com.androosio.jamesdsptweaks/files"
+APPFILES_PATH="/data/user/0/com.androosio.thortune/files"
 LOG_FILE="$WORKING_PATH/jdsp.magisk.log"
 
 echo "Install JamesDSP Magisk Module started" > $LOG_FILE

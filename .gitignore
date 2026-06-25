@@ -7,3 +7,6 @@ app/release/
 local.properties
 *.iml
 .DS_Store
+
+# Serena tooling
+.serena/

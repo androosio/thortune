@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks.utils
+package com.androosio.thortune.utils
 
 import android.content.Context
 import android.content.Intent
@@ -19,14 +19,28 @@ object JdspUtils {
         FileUtils.copyAsset(context, backupFile, outFile)
     }
 
-    /** Temporary-root path: mount the JamesDSP audio_effects config and start the engine. */
-    fun enableJdsp(context: Context) {
-        RootUtils.runRootScript(context, "jdsp.enable.sh")
+    /** Filename of the recommended preset once copied into the Downloads folder. */
+    const val RECOMMENDED_PRESET_FILENAME = "Joeys_Retro_Handhelds.tar"
+
+    /**
+     * Copy Joey's Retro Handhelds recommended JamesDSP preset into the Downloads folder so the
+     * user can load it from inside the JamesDSP Manager app. Returns true on success.
+     */
+    fun copyRecommendedPreset(context: Context): Boolean {
+        val asset = "app/support/conf_files/joeys_retro_handhelds_preset.tar"
+        val outFile = FileUtils.getPathDownload("/$RECOMMENDED_PRESET_FILENAME")
+        return FileUtils.copyAsset(context, asset, outFile)
     }
 
-    fun disableJdsp(context: Context) {
-        RootUtils.runRootScript(context, "jdsp.disable.sh")
-    }
+    /**
+     * Temporary-root path: mount the JamesDSP audio_effects config and start the engine.
+     * Returns true if the root operation was dispatched (the PServer binder accepted it).
+     */
+    fun enableJdsp(context: Context): Boolean =
+        RootUtils.runRootScript(context, "jdsp.enable.sh") != null
+
+    fun disableJdsp(context: Context): Boolean =
+        RootUtils.runRootScript(context, "jdsp.disable.sh") != null
 
     fun hasJdspPackage(context: Context): Boolean {
         return RootUtils.isPackageInstalled(context, JDSP_PACKAGE_NAME)

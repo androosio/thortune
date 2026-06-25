@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks
+package com.androosio.thortune
 
 import android.Manifest
 import android.content.Intent

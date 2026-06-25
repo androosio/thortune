@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks
+package com.androosio.thortune
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -12,8 +12,9 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.androosio.jamesdsptweaks.utils.JdspUtils
-import com.androosio.jamesdsptweaks.utils.RootUtils
+import com.androosio.thortune.utils.JdspUtils
+import com.androosio.thortune.utils.RootUtils
+import com.androosio.thortune.utils.SaturationUtils
 
 fun getApplicationName(context: Context): String {
     val applicationInfo = context.applicationInfo
@@ -36,6 +37,17 @@ class BootReceiver : BroadcastReceiver() {
 
         Log.d(tag, "Boot completed received")
 
+        val sharedPrefs = AppSettings.getSharedPrefs(context)
+
+        // Display saturation persists via its system property, but re-issue the runtime
+        // SurfaceFlinger call as a belt-and-braces fallback once PServer is reachable. This needs
+        // no notification, so it runs before the POST_NOTIFICATIONS gate below.
+        val saturation = AppSettings.getSaturation(sharedPrefs)
+        if (saturation != AppSettings.DEFAULT_SATURATION) {
+            Log.d(tag, "Re-applying display saturation at boot: $saturation")
+            SaturationUtils.apply(context, saturation)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 Log.d(tag, "POST_NOTIFICATIONS not granted; skipping boot tweaks")
@@ -43,7 +55,6 @@ class BootReceiver : BroadcastReceiver() {
             }
         }
 
-        val sharedPrefs = AppSettings.getSharedPrefs(context)
         if (AppSettings.getJdspEnabled(sharedPrefs)) {
             createNotificationChannel(context)
             showNotification(context)

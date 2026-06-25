@@ -1,4 +1,4 @@
-package com.androosio.jamesdsptweaks.utils
+package com.androosio.thortune.utils
 
 import android.annotation.SuppressLint
 import android.os.IBinder

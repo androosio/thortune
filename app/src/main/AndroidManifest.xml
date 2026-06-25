@@ -20,7 +20,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.JamesDspTweaks"
+        android:theme="@style/Theme.ThorEssentialTweaks"
         android:hasFragileUserData="true">
 
         <provider

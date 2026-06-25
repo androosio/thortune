@@ -1,0 +1,100 @@
+package com.androosio.thortune.ui
+
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.androosio.thortune.AppSettings
+import com.androosio.thortune.utils.JdspUtils
+import com.androosio.thortune.utils.RootUtils
+import com.androosio.thortune.utils.SaturationUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Single source of truth for the UI. Created once by [com.androosio.thortune.MainActivity].
+ * Holds Compose snapshot state so any change recomposes the screen automatically.
+ */
+class AppState(private val context: Context) {
+
+    private val prefs = AppSettings.getSharedPrefs(context)
+
+    // Privileged work (root scripts over the PServer binder) is blocking, so run it off the main
+    // thread to keep the UI responsive. Lives for the activity's lifetime alongside this state.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    /** Permanent (Magisk/su) root present. */
+    val isRooted: Boolean = RootUtils.isDeviceRooted
+
+    /** Manufacturer PServer binder present — the privileged channel both features rely on. */
+    val hasPServer: Boolean = RootUtils.hasPServer()
+
+    val saturationSupported: Boolean = SaturationUtils.isSupported()
+
+    var jdspEnabled by mutableStateOf(AppSettings.getJdspEnabled(prefs))
+        private set
+    var saturation by mutableFloatStateOf(AppSettings.getSaturation(prefs))
+        private set
+    var managerInstalled by mutableStateOf(JdspUtils.hasJdspPackage(context))
+        private set
+    var moduleInstalled by mutableStateOf(if (isRooted) JdspUtils.isMagiskModuleInstalled(context) else false)
+        private set
+
+    /** Re-check install state — call when the app returns to the foreground. */
+    fun refreshInstallState() {
+        managerInstalled = JdspUtils.hasJdspPackage(context)
+        if (isRooted) moduleInstalled = JdspUtils.isMagiskModuleInstalled(context)
+    }
+
+    fun toggleJdsp(enabled: Boolean) {
+        // Flip the switch and persist immediately so the UI feels instant; the actual engine
+        // enable/disable (a blocking root operation) runs on a background thread.
+        jdspEnabled = enabled
+        AppSettings.setJdspEnabled(prefs, enabled)
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                if (enabled) JdspUtils.enableJdsp(context) else JdspUtils.disableJdsp(context)
+            }
+            // If the root operation didn't go through, snap the switch back to its real state.
+            if (!ok) {
+                jdspEnabled = !enabled
+                AppSettings.setJdspEnabled(prefs, !enabled)
+            }
+        }
+    }
+
+    fun installModule() {
+        JdspUtils.installJdspMagiskModule(context)
+        moduleInstalled = true
+        jdspEnabled = true
+        AppSettings.setJdspEnabled(prefs, true)
+    }
+
+    fun installManager() {
+        JdspUtils.installJdspManager(context)
+        JdspUtils.copyBackupFile(context)
+    }
+
+    fun openManager(): Boolean = JdspUtils.openJdspManager(context)
+
+    /** Copy the recommended preset into Downloads; returns true on success. */
+    fun copyRecommendedPreset(): Boolean = JdspUtils.copyRecommendedPreset(context)
+
+    /** Update the displayed value while dragging, without touching SurfaceFlinger. */
+    fun previewSaturation(value: Float) {
+        saturation = value
+    }
+
+    /** Commit a saturation value: persist it and apply it to SurfaceFlinger now. */
+    fun applySaturation(value: Float) {
+        saturation = value
+        AppSettings.setSaturation(prefs, value)
+        scope.launch(Dispatchers.IO) { SaturationUtils.apply(context, value) }
+    }
+
+    fun resetSaturation() = applySaturation(AppSettings.DEFAULT_SATURATION)
+}
