@@ -253,13 +253,13 @@ private fun AudioSection(appState: AppState) {
                 // The Manager only accepts the import while its engine/service is running.
                 enabled = appState.jdspEnabled,
                 onClick = {
-                    if (appState.importPreset()) {
-                        Toast.makeText(context, "Choose \"Import and activate\" in JamesDSP", Toast.LENGTH_LONG).show()
-                    } else {
-                        // The file is still in Downloads for a manual import.
+                    Toast.makeText(context, "Opening JamesDSP…", Toast.LENGTH_SHORT).show()
+                    appState.importPreset { ok ->
                         Toast.makeText(
                             context,
-                            "Couldn't open JamesDSP. Saved to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME} for manual import.",
+                            if (ok) "Choose \"Import and activate\" in JamesDSP"
+                            // The file is still in Downloads for a manual import.
+                            else "Couldn't open JamesDSP. Saved to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME} for manual import.",
                             Toast.LENGTH_LONG,
                         ).show()
                     }

@@ -83,8 +83,16 @@ class AppState(private val context: Context) {
     /** Copy the recommended preset into Downloads; returns true on success. */
     fun copyRecommendedPreset(): Boolean = JdspUtils.copyRecommendedPreset(context)
 
-    /** Hand the recommended preset to JamesDSP's importer; returns true if it opened. */
-    fun importPreset(): Boolean = JdspUtils.importPresetIntoManager(context)
+    /**
+     * Hand the recommended preset to JamesDSP's importer. Runs off the main thread (it primes the
+     * Manager's first run and waits for it), reporting success on the main thread via [onResult].
+     */
+    fun importPreset(onResult: (Boolean) -> Unit) {
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) { JdspUtils.importPresetIntoManager(context) }
+            onResult(ok)
+        }
+    }
 
     /** Update the displayed value while dragging, without touching SurfaceFlinger. */
     fun previewSaturation(value: Float) {

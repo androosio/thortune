@@ -43,19 +43,28 @@ object JdspUtils {
      */
     fun importPresetIntoManager(context: Context): Boolean {
         if (!copyRecommendedPreset(context)) return false
-        // JamesDSP copies the imported file into its own Presets folder but doesn't create that
-        // folder, so the import fails with ENOENT on a fresh install. Pre-create it (and the
-        // Liveprog folder presets may reference) over the root channel. Because root creates them
-        // owned by root — which the Manager's own uid then can't write to (EACCES, especially after
-        // a reinstall changes its uid) — make them world-writable so the Manager can import.
         val filesDir = "/storage/emulated/0/Android/data/$JDSP_PACKAGE_NAME/files"
-        RootUtils.runRootCommand(
-            context,
-            "mkdir -p $filesDir/Presets $filesDir/Liveprog; " +
-                "chmod 0777 $filesDir $filesDir/Presets $filesDir/Liveprog; " +
-                // Pre-grant notifications so JamesDSP's first-run prompt can't pop over the import.
-                "pm grant $JDSP_PACKAGE_NAME android.permission.POST_NOTIFICATIONS",
-        )
+
+        // Each root command is issued separately: the PServer channel runs them directly, so
+        // ';'-chained compound commands (and pm grant inside them) don't reliably take.
+        // 1. Pre-grant notifications so the Manager's first-run prompt never blocks/interrupts us.
+        RootUtils.runRootCommand(context, "pm grant $JDSP_PACKAGE_NAME android.permission.POST_NOTIFICATIONS")
+        // 2. The Manager copies the imported .tar into its own Presets folder but doesn't create
+        //    that folder, so a fresh import fails with ENOENT. Create it and make it writable by
+        //    the Manager's uid (root creates it root-owned, and the uid changes on reinstall).
+        //    We deliberately do NOT create the Liveprog folder: the Manager's preset loader writes
+        //    the embedded liveprog there itself, and a root-owned Liveprog folder makes that write
+        //    throw — which it then reports via a dialog on a background thread and crashes.
+        RootUtils.runRootCommand(context, "mkdir -p $filesDir/Presets")
+        RootUtils.runRootCommand(context, "chmod 0777 $filesDir $filesDir/Presets")
+
+        // Prime first run: launching MainActivity makes the Manager initialise and extract its
+        // built-in resources (incl. liveprog scripts) so the import isn't racing first-run. With
+        // notifications already granted this runs silently. ~1s in practice; wait a safe margin.
+        val launch = launchIntent(context) ?: return false
+        context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        Thread.sleep(2500)
+
         val file = File(FileUtils.getPathDownload("/$RECOMMENDED_PRESET_FILENAME"))
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW)
