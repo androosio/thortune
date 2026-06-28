@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -258,26 +259,31 @@ private fun AudioSection(appState: AppState) {
             }
             Text(
                 "Opens JamesDSP — choose \"Import and activate\" to apply it. A copy is also saved " +
-                    "to your Downloads.",
+                    "to your Downloads. A video guide to the preset is linked in Settings.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        // 4. Jump into the Manager to tune presets.
-        Step(4, "Open the Manager") {
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = appState.managerInstalled,
-                onClick = {
-                    if (!appState.openManager()) {
-                        // The rootless Manager only exposes its UI while the engine is running.
-                        Toast.makeText(context, "Turn the engine on first to open JamesDSP", Toast.LENGTH_SHORT).show()
-                    }
-                },
-            ) {
-                Text("Open JamesDSP")
-            }
+        // Optional, outside the numbered flow: jump into the Manager for further tuning.
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        Text(
+            "That's the essential setup. Want to go further? Open JamesDSP to fine-tune the EQ, " +
+                "presets and effects yourself.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = appState.managerInstalled,
+            onClick = {
+                if (!appState.openManager()) {
+                    // The rootless Manager only exposes its UI while the engine is running.
+                    Toast.makeText(context, "Turn the engine on first to open JamesDSP", Toast.LENGTH_SHORT).show()
+                }
+            },
+        ) {
+            Text("Open JamesDSP")
         }
     }
 }
