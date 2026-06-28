@@ -209,7 +209,10 @@ private fun AudioSection(appState: AppState) {
         }
 
         // 2. Enable the engine: a runtime toggle over the PServer binder, set in its own tile.
-        Step(2, "Turn on the engine", done = appState.jdspEnabled) {
+        // Without the Manager the engine can't really be on, so show it as off (rather than a
+        // disabled-but-checked switch) until the Manager is installed.
+        val engineOn = appState.jdspEnabled && appState.managerInstalled
+        Step(2, "Turn on the engine", done = engineOn) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -220,11 +223,17 @@ private fun AudioSection(appState: AppState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    if (appState.jdspEnabled) "Engine on" else "Engine off",
+                    when {
+                        !appState.managerInstalled -> "Install the Manager first"
+                        engineOn -> "Engine on"
+                        else -> "Engine off"
+                    },
                     style = MaterialTheme.typography.bodyLarge,
+                    color = if (appState.managerInstalled) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Switch(
-                    checked = appState.jdspEnabled,
+                    checked = engineOn,
                     // Enabling the engine is pointless until the Manager app is installed.
                     enabled = appState.managerInstalled,
                     onCheckedChange = { appState.toggleJdsp(it) },
