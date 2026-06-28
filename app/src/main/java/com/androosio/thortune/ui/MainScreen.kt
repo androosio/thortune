@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -333,7 +334,8 @@ private fun DisplaySection(appState: AppState) {
         }
 
         Text(
-            "Tune the panel's colour intensity. 100% is stock; 80% is recommended.",
+            "Tune the colour intensity of both AYN Thor screens. 100% is stock; 80% is " +
+                "recommended. Changes apply instantly and persist across reboots.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -353,13 +355,17 @@ private fun DisplaySection(appState: AppState) {
             valueRange = 0f..2f,
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { appState.applySaturation(0.8f) }) {
-                Text("Use recommended (80%)")
-            }
-            TextButton(onClick = { appState.resetSaturation() }) {
-                Text("Reset to stock (100%)")
-            }
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { appState.applySaturation(0.8f) },
+        ) {
+            Text("Use recommended (80%)")
+        }
+        TextButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { appState.resetSaturation() },
+        ) {
+            Text("Reset to stock (100%)")
         }
     }
 }
