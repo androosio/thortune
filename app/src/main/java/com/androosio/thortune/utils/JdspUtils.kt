@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -106,5 +107,12 @@ object JdspUtils {
     /** Install the bundled JamesDSP Manager APK (user confirms via the system installer). */
     fun installJdspManager(context: Context) {
         ApkUtils.installApkFromAssets(context, "JamesDSPManagerThePBone.apk", "app")
+    }
+
+    /** Launch the system uninstall dialog for the JamesDSP Manager (user confirms). */
+    fun uninstallJdspManager(context: Context) {
+        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$JDSP_PACKAGE_NAME"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 }

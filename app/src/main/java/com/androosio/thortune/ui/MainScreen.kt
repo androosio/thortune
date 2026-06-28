@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -284,6 +285,16 @@ private fun AudioSection(appState: AppState) {
             },
         ) {
             Text("Open JamesDSP")
+        }
+
+        if (appState.managerInstalled) {
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                onClick = { appState.uninstallManager() },
+            ) {
+                Text("Uninstall JamesDSP")
+            }
         }
     }
 }

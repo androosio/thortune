@@ -78,6 +78,8 @@ class AppState(private val context: Context) {
 
     fun openManager(): Boolean = JdspUtils.openJdspManager(context)
 
+    fun uninstallManager() = JdspUtils.uninstallJdspManager(context)
+
     /** Copy the recommended preset into Downloads; returns true on success. */
     fun copyRecommendedPreset(): Boolean = JdspUtils.copyRecommendedPreset(context)
 
