@@ -37,7 +37,7 @@ class AppState(private val context: Context) {
         private set
     var saturation by mutableFloatStateOf(AppSettings.getSaturation(prefs))
         private set
-    var managerInstalled by mutableStateOf(JdspUtils.hasJdspPackage(context))
+    var managerInstalled by mutableStateOf(JdspUtils.isManagerInstalled(context))
         private set
 
     /** Whether the live quick-controls panel is mirrored onto the Thor's lower screen. */
@@ -51,7 +51,7 @@ class AppState(private val context: Context) {
 
     /** Re-check install state — call when the app returns to the foreground. */
     fun refreshInstallState() {
-        managerInstalled = JdspUtils.hasJdspPackage(context)
+        managerInstalled = JdspUtils.isManagerInstalled(context)
     }
 
     fun toggleJdsp(enabled: Boolean) {

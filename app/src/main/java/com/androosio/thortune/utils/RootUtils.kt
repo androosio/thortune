@@ -1,7 +1,6 @@
 package com.androosio.thortune.utils
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
@@ -68,14 +67,5 @@ object RootUtils {
         val result = RootExec().executeAsRoot(cmd)
         Log.d(TAG, "$script finished with result: $result")
         return result.getOrNull()
-    }
-
-    fun isPackageInstalled(context: Context, packageName: String?): Boolean {
-        return try {
-            context.packageManager.getPackageInfo(packageName!!, PackageManager.GET_ACTIVITIES)
-            true
-        } catch (e: PackageManager.NameNotFoundException) {
-            false
-        }
     }
 }

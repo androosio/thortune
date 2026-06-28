@@ -11,6 +11,9 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
         </intent>
+        <!-- Explicit visibility of the JamesDSP Manager so install-state detection
+             (getPackageInfo / getLaunchIntentForPackage) is reliable on Android 11+. -->
+        <package android:name="james.dsp" />
     </queries>
 
     <application
