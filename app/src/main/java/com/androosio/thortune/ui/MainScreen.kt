@@ -281,6 +281,28 @@ private fun SettingsSection(appState: AppState) {
         }.getOrNull() ?: "—"
     }
 
+    SectionCard("Lower screen", Icons.Filled.Contrast) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Quick-controls panel", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Show the engine toggle and saturation presets on the Thor's bottom screen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Switch(
+                checked = appState.secondaryPanelEnabled,
+                onCheckedChange = { appState.setPanelEnabled(it) },
+            )
+        }
+    }
+
     SectionCard("Device", Icons.Filled.Bolt) {
         StatusRow("Privileged access (PServer)", if (appState.hasPServer) "Available" else "Not found", appState.hasPServer)
     }

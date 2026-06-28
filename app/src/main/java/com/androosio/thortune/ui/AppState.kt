@@ -40,6 +40,15 @@ class AppState(private val context: Context) {
     var managerInstalled by mutableStateOf(JdspUtils.hasJdspPackage(context))
         private set
 
+    /** Whether the live quick-controls panel is mirrored onto the Thor's lower screen. */
+    var secondaryPanelEnabled by mutableStateOf(AppSettings.getSecondaryPanelEnabled(prefs))
+        private set
+
+    fun setPanelEnabled(enabled: Boolean) {
+        secondaryPanelEnabled = enabled
+        AppSettings.setSecondaryPanelEnabled(prefs, enabled)
+    }
+
     /** Re-check install state — call when the app returns to the foreground. */
     fun refreshInstallState() {
         managerInstalled = JdspUtils.hasJdspPackage(context)

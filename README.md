@@ -34,15 +34,19 @@ servers. Toggle it with the in-app switch.
    once (optionally importing the recommended preset copied to your Downloads folder). Enable
    the engine with the **JamesDSP** switch.
 3. **Display** tab → drag the slider to set saturation (100% is stock; 80% is recommended).
-4. **Settings** tab → toggle the second-screen companion panel and check device support.
+4. **Settings** tab → toggle the lower-screen quick-controls panel and check device support.
+
+On the Thor's **lower screen**, a live quick-controls panel mirrors the engine toggle and
+saturation presets so you can tweak both without leaving whatever's on the top screen. It
+shares state with the main UI, so a change on either screen updates the other instantly.
 
 ## Supported devices
 
 Any device whose manufacturer provides the "Run script as root" / PServer service. JamesDSP
 additionally requires a Snapdragon `kalama` (8 Gen 2) audio config — confirmed on the AYN
 Odin2 Portal and AYN Thor. Other SKUs may need a different `audio_effects` config under
-`app/src/main/assets/app/support/conf_files/`. The companion panel appears only on devices
-that expose a secondary presentation display (e.g. the Thor's lower screen).
+`app/src/main/assets/app/support/conf_files/`. The quick-controls panel appears only on
+devices that expose a secondary presentation display (e.g. the Thor's lower screen).
 
 ## Building
 
