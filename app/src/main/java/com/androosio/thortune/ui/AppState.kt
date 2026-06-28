@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 
 /**
  * Single source of truth for the UI. Created once by [com.androosio.thortune.MainActivity].
@@ -96,23 +95,16 @@ class AppState(private val context: Context) {
 
     /** Update the displayed value while dragging, without touching SurfaceFlinger. */
     fun previewSaturation(value: Float) {
-        saturation = quantize(value)
+        saturation = SaturationUtils.quantize(value)
     }
 
     /** Commit a saturation value: persist it and apply it to SurfaceFlinger now. */
     fun applySaturation(value: Float) {
-        val v = quantize(value)
+        val v = SaturationUtils.quantize(value)
         saturation = v
         AppSettings.setSaturation(prefs, v)
         scope.launch(Dispatchers.IO) { SaturationUtils.apply(context, v) }
     }
 
     fun resetSaturation() = applySaturation(AppSettings.DEFAULT_SATURATION)
-
-    /**
-     * Snap to whole-percent steps. The slider is continuous, so without this a drag commits an
-     * arbitrary float (e.g. 0.794) that the "%" label then rounds down to 79 — making a value the
-     * user set as "80" reappear as 79. Quantizing keeps the stored value and the label in lockstep.
-     */
-    private fun quantize(value: Float): Float = (value * 100).roundToInt() / 100f
 }

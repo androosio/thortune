@@ -2,6 +2,7 @@ package com.androosio.thortune.utils
 
 import android.content.Context
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Applies the display colour saturation through SurfaceFlinger, routed over the manufacturer's
@@ -41,5 +42,14 @@ object SaturationUtils {
         RootUtils.runRootCommand(context, "setprop $PROP_SATURATION ${format(value)}")
     }
 
-    private fun format(value: Float) = String.format(Locale.US, "%.2f", value)
+    /**
+     * Snap a saturation value to whole-percent steps. The UI slider is continuous, so without this
+     * a drag commits an arbitrary float (e.g. 0.794) that the "%" label rounds down to 79 — making
+     * a value the user set as "80" reappear as 79. Quantizing keeps the stored value and label in
+     * step. `internal` for unit testing.
+     */
+    internal fun quantize(value: Float): Float = (value * 100).roundToInt() / 100f
+
+    /** Format with [Locale.US] so a comma-decimal locale can't emit "0,80". `internal` for tests. */
+    internal fun format(value: Float) = String.format(Locale.US, "%.2f", value)
 }
