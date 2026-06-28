@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -180,8 +179,8 @@ private fun AudioSection(appState: AppState) {
 
     SectionCard("JamesDSP", Icons.Filled.GraphicEq) {
         Text(
-            "System-wide audio DSP. Install the Manager app and enable the engine — they need " +
-                "each other, so set up both. The engine re-applies automatically on every boot.",
+            "System-wide audio DSP. Follow the steps to set it up — the engine re-applies " +
+                "automatically on every boot.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -196,91 +195,124 @@ private fun AudioSection(appState: AppState) {
         }
 
         // 1. Install (or reinstall) the Manager app — required before the engine is useful.
-        FilledTonalButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { appState.installManager() },
-        ) {
-            Text(if (appState.managerInstalled) "Reinstall Manager" else "Install Manager")
+        Step(1, "Install the Manager", done = appState.managerInstalled) {
+            FilledTonalButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { appState.installManager() },
+            ) {
+                Text(if (appState.managerInstalled) "Reinstall Manager" else "Install Manager")
+            }
         }
 
         // 2. Enable the engine: a runtime toggle over the PServer binder, set in its own tile.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(
-                            if (appState.jdspEnabled) Accent
-                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        ),
-                )
-                Spacer(Modifier.size(12.dp))
+        Step(2, "Turn on the engine", done = appState.jdspEnabled) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     if (appState.jdspEnabled) "Engine on" else "Engine off",
                     style = MaterialTheme.typography.bodyLarge,
                 )
+                Switch(
+                    checked = appState.jdspEnabled,
+                    // Enabling the engine is pointless until the Manager app is installed.
+                    enabled = appState.managerInstalled,
+                    onCheckedChange = { appState.toggleJdsp(it) },
+                )
             }
-            Switch(
-                checked = appState.jdspEnabled,
-                // Enabling the engine is pointless until the Manager app is installed.
-                enabled = appState.managerInstalled,
-                onCheckedChange = { appState.toggleJdsp(it) },
+        }
+
+        // 3. Copy the recommended preset and explain how to import it.
+        Step(3, "Add the recommended preset") {
+            Text(
+                "Joey's Retro Handhelds tuning for the Thor's speakers.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FilledTonalButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val ok = appState.copyRecommendedPreset()
+                    Toast.makeText(
+                        context,
+                        if (ok) "Preset copied to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME}"
+                        else "Couldn't copy the preset",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            ) {
+                Text("Copy preset to Downloads")
+            }
+            Text(
+                "Then in JamesDSP Manager:\n" +
+                    "• Tap the three-dot menu (⋮) in the bottom-left → Presets.\n" +
+                    "• Tap Add → Import.\n" +
+                    "• Select ${JdspUtils.RECOMMENDED_PRESET_FILENAME} from Downloads.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        // 3. Jump into the Manager to tune presets.
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            enabled = appState.managerInstalled,
-            onClick = {
-                if (!appState.openManager()) {
-                    // The rootless Manager only exposes its UI while the engine is running.
-                    Toast.makeText(context, "Turn the engine on first to open JamesDSP", Toast.LENGTH_SHORT).show()
-                }
-            },
-        ) {
-            Text("Open JamesDSP")
+        // 4. Jump into the Manager to tune presets.
+        Step(4, "Open the Manager") {
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = appState.managerInstalled,
+                onClick = {
+                    if (!appState.openManager()) {
+                        // The rootless Manager only exposes its UI while the engine is running.
+                        Toast.makeText(context, "Turn the engine on first to open JamesDSP", Toast.LENGTH_SHORT).show()
+                    }
+                },
+            ) {
+                Text("Open JamesDSP")
+            }
         }
     }
+}
 
-    SectionCard("Recommended preset", Icons.Filled.Star) {
-        Text(
-            "Joey's Retro Handhelds tuning for the Thor's speakers. Copy it to your Downloads " +
-                "folder, then import it from inside JamesDSP Manager.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FilledTonalButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                val ok = appState.copyRecommendedPreset()
-                Toast.makeText(
-                    context,
-                    if (ok) "Preset copied to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME}"
-                    else "Couldn't copy the preset",
-                    Toast.LENGTH_LONG,
-                ).show()
-            },
+/** One numbered step in the JamesDSP setup flow: a badge + title above the step's control. */
+@Composable
+private fun Step(
+    number: Int,
+    title: String,
+    done: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    if (done) Brush.linearGradient(listOf(Accent, Color(0xFF5A33C8)))
+                    else Brush.linearGradient(
+                        listOf(Accent.copy(alpha = 0.22f), Accent.copy(alpha = 0.10f)),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
         ) {
-            Text("Copy Joey's Retro Handhelds preset")
+            Text(
+                "$number",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (done) Color.White else AccentSoft,
+            )
         }
-        Text(
-            "To load it in JamesDSP Manager:\n" +
-                "1. Tap the three-dot menu (⋮) in the bottom-left → Presets.\n" +
-                "2. Tap Add → Import.\n" +
-                "3. Select ${JdspUtils.RECOMMENDED_PRESET_FILENAME} from your Downloads folder.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Spacer(Modifier.size(14.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            content()
+        }
     }
 }
 
