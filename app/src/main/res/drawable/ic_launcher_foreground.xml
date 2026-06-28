@@ -3,10 +3,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Equalizer bars (DSP motif), drawn as round-capped strokes within the icon safe zone. -->
+    <!-- Lightning bolt (the "Thor" mark, matching the in-app brand icon), filled within the
+         adaptive-icon safe zone. Used for both the colour foreground and the themed monochrome. -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="12"
-        android:strokeLineCap="round"
-        android:pathData="M27,74 L27,52 M45,74 L45,38 M63,74 L63,48 M81,74 L81,34" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,16 L33,60 L52,60 L45,92 L78,46 L58,46 Z" />
 </vector>

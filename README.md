@@ -1,14 +1,13 @@
-# ThorTune
+# ⚡ThorTune
 
-A minimal Android app for AYN **Thor** (and similar) handhelds that exposes the manufacturer
-**"run script as root"** service. It bundles two essential system tweaks behind one UI:
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/androosio)
 
+A minimal Android app for the AYN **Thor**, It bundles two essential system tweaks behind one UI:
+
+- **Display saturation** — adjust the panel's colour intensity through SurfaceFlinger.
 - **JamesDSP** — the [JamesDSP](https://github.com/Audio4Linux/JDSP4Linux) system-wide audio
   DSP, wired into the Android audio effect chain.
-- **Display saturation** — adjust the panel's colour intensity through SurfaceFlinger.
-
-On the Thor's dual-screen hardware it also shows a live **companion status panel** on the
-lower screen.
 
 It bundles Tim Schneeberger's "rootfull" **JamesDSP Manager** fork (package `james.dsp`)
 plus the native engine and the audio-effects configuration. It combines two earlier
@@ -19,7 +18,9 @@ control from ThorSaturation (derived from [OdinTools](https://github.com/langerh
 
 ## How it works
 
-There is no `su`. All privileged work goes through the manufacturer **"PServer" binder**.
+**Display saturation** persists via the `persist.sys.sf.color_saturation` system property
+(read by SurfaceFlinger at boot) and is also applied immediately via a runtime SurfaceFlinger
+transaction. `BootReceiver` re-issues the runtime call as a belt-and-braces fallback.
 
 **JamesDSP** activates one of two ways, chosen automatically:
 
@@ -30,9 +31,7 @@ There is no `su`. All privileged work goes through the manufacturer **"PServer" 
 - **Permanent root** (Magisk detected): the app installs a JamesDSP Magisk module
   (`jdsp_v6.4-trimmed.zip`) that applies the same change persistently. Requires a reboot.
 
-**Display saturation** persists via the `persist.sys.sf.color_saturation` system property
-(read by SurfaceFlinger at boot) and is also applied immediately via a runtime SurfaceFlinger
-transaction. `BootReceiver` re-issues the runtime call as a belt-and-braces fallback.
+
 
 ## Usage
 
