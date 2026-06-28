@@ -409,7 +409,7 @@ private fun SettingsSection(appState: AppState) {
 
     SectionCard("About", Icons.Filled.Settings) {
         StatusRow("Version", versionName, true)
-        LinkRow(Icons.Filled.PlayCircle, "Preset guide (video)", "Joey's Retro Handhelds on YouTube", "https://www.youtube.com/watch?v=kk5Q4DtMrME")
+        LinkRow(Icons.Filled.PlayCircle, "JamesDSP Preset video guide", "Joey's Retro Handhelds on YouTube", "https://www.youtube.com/watch?v=kk5Q4DtMrME")
         LinkRow(Icons.Filled.Code, "Source code", "github.com/androosio/thortune", "https://github.com/androosio/thortune")
         LinkRow(Icons.Filled.Coffee, "Buy me a coffee", "buymeacoffee.com/androosio", "https://buymeacoffee.com/androosio")
     }
