@@ -27,9 +27,8 @@ class BootReceiver : BroadcastReceiver() {
     private val tag = "BootReceiver"
 
     override fun onReceive(context: Context, intent: Intent) {
-        // Temporary root (re-applied each boot) requires the manufacturer's PServer binder.
-        // On a permanently-rooted device the JamesDSP Magisk module handles this instead.
-        if (!RootUtils.hasPServer() || RootUtils.isDeviceRooted)
+        // The tweaks are re-applied each boot through the manufacturer's PServer binder.
+        if (!RootUtils.hasPServer())
             return
 
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_LOCKED_BOOT_COMPLETED)

@@ -19,12 +19,10 @@ import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -145,14 +143,12 @@ private fun AudioSection(appState: AppState) {
     SectionCard("JamesDSP", Icons.Filled.GraphicEq) {
         Text(
             "System-wide audio DSP. Install the Manager app and enable the engine — they need " +
-                "each other, so set up both. " +
-                if (appState.isRooted) "The Magisk module needs a reboot to take effect."
-                else "The engine re-applies automatically on every boot.",
+                "each other, so set up both. The engine re-applies automatically on every boot.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        if (!appState.hasPServer && !appState.isRooted) {
+        if (!appState.hasPServer) {
             Text(
                 "No root method detected on this device.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -169,35 +165,22 @@ private fun AudioSection(appState: AppState) {
             Text(if (appState.managerInstalled) "Reinstall Manager" else "Install Manager")
         }
 
-        // 2. Enable the engine: a runtime toggle on temporary root, a Magisk module on permanent root.
-        if (appState.isRooted) {
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !appState.moduleInstalled,
-                onClick = {
-                    appState.installModule()
-                    Toast.makeText(context, "JamesDSP module installed — please reboot", Toast.LENGTH_LONG).show()
-                },
-            ) {
-                Text(if (appState.moduleInstalled) "Module installed" else "Install JamesDSP module")
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    if (appState.jdspEnabled) "Engine on" else "Engine off",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Switch(
-                    checked = appState.jdspEnabled,
-                    // Enabling the engine is pointless until the Manager app is installed.
-                    enabled = appState.managerInstalled,
-                    onCheckedChange = { appState.toggleJdsp(it) },
-                )
-            }
+        // 2. Enable the engine: a runtime toggle over the PServer binder.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (appState.jdspEnabled) "Engine on" else "Engine off",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Switch(
+                checked = appState.jdspEnabled,
+                // Enabling the engine is pointless until the Manager app is installed.
+                enabled = appState.managerInstalled,
+                onCheckedChange = { appState.toggleJdsp(it) },
+            )
         }
 
         // 3. Jump into the Manager to tune presets.
@@ -300,12 +283,6 @@ private fun SettingsSection(appState: AppState) {
 
     SectionCard("Device", Icons.Filled.Bolt) {
         StatusRow("Privileged access (PServer)", if (appState.hasPServer) "Available" else "Not found", appState.hasPServer)
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        StatusRow(
-            "Root",
-            if (appState.isRooted) "Permanent (Magisk)" else if (appState.hasPServer) "Temporary (PServer)" else "None",
-            appState.isRooted || appState.hasPServer,
-        )
     }
 
     SectionCard("About", Icons.Filled.Settings) {

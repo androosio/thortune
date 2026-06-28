@@ -28,9 +28,6 @@ class AppState(private val context: Context) {
     // thread to keep the UI responsive. Lives for the activity's lifetime alongside this state.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    /** Permanent (Magisk/su) root present. */
-    val isRooted: Boolean = RootUtils.isDeviceRooted
-
     /** Manufacturer PServer binder present — the privileged channel both features rely on. */
     val hasPServer: Boolean = RootUtils.hasPServer()
 
@@ -42,13 +39,10 @@ class AppState(private val context: Context) {
         private set
     var managerInstalled by mutableStateOf(JdspUtils.hasJdspPackage(context))
         private set
-    var moduleInstalled by mutableStateOf(if (isRooted) JdspUtils.isMagiskModuleInstalled(context) else false)
-        private set
 
     /** Re-check install state — call when the app returns to the foreground. */
     fun refreshInstallState() {
         managerInstalled = JdspUtils.hasJdspPackage(context)
-        if (isRooted) moduleInstalled = JdspUtils.isMagiskModuleInstalled(context)
     }
 
     fun toggleJdsp(enabled: Boolean) {
@@ -66,13 +60,6 @@ class AppState(private val context: Context) {
                 AppSettings.setJdspEnabled(prefs, !enabled)
             }
         }
-    }
-
-    fun installModule() {
-        JdspUtils.installJdspMagiskModule(context)
-        moduleInstalled = true
-        jdspEnabled = true
-        AppSettings.setJdspEnabled(prefs, true)
     }
 
     fun installManager() {

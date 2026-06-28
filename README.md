@@ -22,25 +22,18 @@ control from ThorSaturation (derived from [OdinTools](https://github.com/langerh
 (read by SurfaceFlinger at boot) and is also applied immediately via a runtime SurfaceFlinger
 transaction. `BootReceiver` re-issues the runtime call as a belt-and-braces fallback.
 
-**JamesDSP** activates one of two ways, chosen automatically:
-
-- **Temporary root** (no permanent root installed): each boot, `BootReceiver` runs
-  `jdsp.enable.sh` through the PServer binder, which bind-mounts the JamesDSP
-  `audio_effects.conf` over the system config and restarts the audio servers. Toggle this
-  with the in-app switch.
-- **Permanent root** (Magisk detected): the app installs a JamesDSP Magisk module
-  (`jdsp_v6.4-trimmed.zip`) that applies the same change persistently. Requires a reboot.
-
-
+**JamesDSP** runs through the manufacturer's PServer binder — there's no `su` and no Magisk
+module (nobody roots the Thor). Each boot, `BootReceiver` runs `jdsp.enable.sh`, which
+bind-mounts the JamesDSP `audio_effects.conf` over the system config and restarts the audio
+servers. Toggle it with the in-app switch.
 
 ## Usage
 
 1. Install and launch the app; allow the notification permission.
 2. **Audio** tab → **Install JamesDSP Manager**, complete the system installer, then open it
-   once (optionally importing the preset backup written to your Downloads folder). Enable the
-   engine with the **JamesDSP** switch (temporary root) or **Install JamesDSP module** + reboot
-   (permanent root).
-3. **Display** tab → drag the slider to set saturation (1.00× is neutral).
+   once (optionally importing the recommended preset copied to your Downloads folder). Enable
+   the engine with the **JamesDSP** switch.
+3. **Display** tab → drag the slider to set saturation (100% is stock; 80% is recommended).
 4. **Settings** tab → toggle the second-screen companion panel and check device support.
 
 ## Supported devices
