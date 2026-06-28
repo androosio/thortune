@@ -100,6 +100,12 @@ killall -q mediaserver
 # Enabled JamesDSP
 pm enable james.dsp
 
+# Pre-grant the notification permission so JamesDSP never shows its first-run
+# POST_NOTIFICATIONS prompt. That prompt, if it appears while the engine is being
+# launched (or a preset imported), interrupts and crashes the engine. Granting it
+# up-front is idempotent and harmless once already granted.
+pm grant james.dsp android.permission.POST_NOTIFICATIONS 2>/dev/null
+
 # Wait for audioserver to respawn with the freshly-mounted effect chain before
 # launching the engine. Without this, EngineLauncherActivity tries to attach to
 # the JamesDSP effect before audioserver has reloaded audio_effects.conf and
