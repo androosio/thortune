@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
@@ -228,7 +229,7 @@ private fun AudioSection(appState: AppState) {
             }
         }
 
-        // 3. Copy the recommended preset and explain how to import it.
+        // 3. Hand the recommended preset straight to JamesDSP's importer.
         Step(3, "Add the recommended preset") {
             Text(
                 "Joey's Retro Handhelds tuning for the Thor's speakers.",
@@ -237,23 +238,25 @@ private fun AudioSection(appState: AppState) {
             )
             FilledTonalButton(
                 modifier = Modifier.fillMaxWidth(),
+                enabled = appState.managerInstalled,
                 onClick = {
-                    val ok = appState.copyRecommendedPreset()
-                    Toast.makeText(
-                        context,
-                        if (ok) "Preset copied to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME}"
-                        else "Couldn't copy the preset",
-                        Toast.LENGTH_LONG,
-                    ).show()
+                    if (appState.importPreset()) {
+                        Toast.makeText(context, "Confirm the import in JamesDSP", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Couldn't open the importer (engine off / Manager not launchable);
+                        // the file is still in Downloads for a manual import.
+                        Toast.makeText(
+                            context,
+                            "Turn the engine on first. (Saved to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME} for manual import.)",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
                 },
             ) {
-                Text("Copy preset to Downloads")
+                Text("Add preset to JamesDSP")
             }
             Text(
-                "Then in JamesDSP Manager:\n" +
-                    "• Tap the three-dot menu (⋮) in the bottom-left → Presets.\n" +
-                    "• Tap Add → Import.\n" +
-                    "• Select ${JdspUtils.RECOMMENDED_PRESET_FILENAME} from Downloads.",
+                "Opens JamesDSP to import it directly. A copy is also saved to your Downloads.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -393,6 +396,7 @@ private fun SettingsSection(appState: AppState) {
 
     SectionCard("About", Icons.Filled.Settings) {
         StatusRow("Version", versionName, true)
+        LinkRow(Icons.Filled.PlayCircle, "Preset guide (video)", "Joey's Retro Handhelds on YouTube", "https://www.youtube.com/watch?v=kk5Q4DtMrME")
         LinkRow(Icons.Filled.Code, "Source code", "github.com/androosio/thortune", "https://github.com/androosio/thortune")
         LinkRow(Icons.Filled.Coffee, "Buy me a coffee", "buymeacoffee.com/androosio", "https://buymeacoffee.com/androosio")
     }

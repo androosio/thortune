@@ -1,8 +1,11 @@
 package com.androosio.thortune.utils
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.core.content.FileProvider
+import java.io.File
 
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
@@ -28,6 +31,29 @@ object JdspUtils {
         val asset = "app/support/conf_files/joeys_retro_handhelds_preset.tar"
         val outFile = FileUtils.getPathDownload("/$RECOMMENDED_PRESET_FILENAME")
         return FileUtils.copyAsset(context, asset, outFile)
+    }
+
+    /**
+     * Hand the recommended preset straight to JamesDSP's importer, skipping the manual
+     * menu → Presets → Add → Import dance. JamesDSP's MainActivity registers an ACTION_VIEW
+     * filter for `content://…*.tar`, so we copy the preset out (also a Downloads fallback),
+     * wrap it in a FileProvider URI, and fire it at the package. Returns true if JamesDSP
+     * accepted the intent (it must be installed and launchable — i.e. the engine is on).
+     */
+    fun importPresetIntoManager(context: Context): Boolean {
+        if (!copyRecommendedPreset(context)) return false
+        val file = File(FileUtils.getPathDownload("/$RECOMMENDED_PRESET_FILENAME"))
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setData(uri)
+            .setPackage(JDSP_PACKAGE_NAME)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        return try {
+            context.startActivity(intent)
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
+        }
     }
 
     /**

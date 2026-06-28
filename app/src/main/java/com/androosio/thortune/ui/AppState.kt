@@ -81,6 +81,9 @@ class AppState(private val context: Context) {
     /** Copy the recommended preset into Downloads; returns true on success. */
     fun copyRecommendedPreset(): Boolean = JdspUtils.copyRecommendedPreset(context)
 
+    /** Hand the recommended preset to JamesDSP's importer; returns true if it opened. */
+    fun importPreset(): Boolean = JdspUtils.importPresetIntoManager(context)
+
     /** Update the displayed value while dragging, without touching SurfaceFlinger. */
     fun previewSaturation(value: Float) {
         saturation = quantize(value)
