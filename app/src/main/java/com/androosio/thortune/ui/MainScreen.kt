@@ -238,16 +238,16 @@ private fun AudioSection(appState: AppState) {
             )
             FilledTonalButton(
                 modifier = Modifier.fillMaxWidth(),
-                enabled = appState.managerInstalled,
+                // The Manager only accepts the import while its engine/service is running.
+                enabled = appState.jdspEnabled,
                 onClick = {
                     if (appState.importPreset()) {
-                        Toast.makeText(context, "Confirm the import in JamesDSP", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Choose \"Import and activate\" in JamesDSP", Toast.LENGTH_LONG).show()
                     } else {
-                        // Couldn't open the importer (engine off / Manager not launchable);
-                        // the file is still in Downloads for a manual import.
+                        // The file is still in Downloads for a manual import.
                         Toast.makeText(
                             context,
-                            "Turn the engine on first. (Saved to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME} for manual import.)",
+                            "Couldn't open JamesDSP. Saved to Downloads as ${JdspUtils.RECOMMENDED_PRESET_FILENAME} for manual import.",
                             Toast.LENGTH_LONG,
                         ).show()
                     }
@@ -256,7 +256,8 @@ private fun AudioSection(appState: AppState) {
                 Text("Add preset to JamesDSP")
             }
             Text(
-                "Opens JamesDSP to import it directly. A copy is also saved to your Downloads.",
+                "Opens JamesDSP — choose \"Import and activate\" to apply it. A copy is also saved " +
+                    "to your Downloads.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
