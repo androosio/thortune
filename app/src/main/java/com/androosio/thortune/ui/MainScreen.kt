@@ -312,12 +312,6 @@ private fun SettingsSection(appState: AppState) {
 
     SectionCard("About", Icons.Filled.Settings) {
         StatusRow("Version", versionName, true)
-        Text(
-            "Combines the JamesDSP system DSP and display-saturation tweaks for AYN Thor handhelds. " +
-                "GPLv2.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         LinkRow(Icons.Filled.Code, "Source code", "github.com/androosio/thortune", "https://github.com/androosio/thortune")
         LinkRow(Icons.Filled.Coffee, "Buy me a coffee", "buymeacoffee.com/androosio", "https://buymeacoffee.com/androosio")
     }
