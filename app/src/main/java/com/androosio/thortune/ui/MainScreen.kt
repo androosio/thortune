@@ -4,8 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import com.androosio.thortune.utils.JdspUtils
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,11 +52,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+
+// Brand accent (matches the lower-screen panel's "charge" gradient), used sparingly for depth.
+private val Accent = Color(0xFF8A5BFF)
+private val AccentSoft = Color(0xFFB49DFF)
 
 private enum class Destination(val label: String, val icon: ImageVector) {
     Display("Display", Icons.Filled.Contrast),
@@ -127,18 +138,39 @@ private fun SectionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        // A hairline edge lifts the card off the near-black background instead of melting into it.
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.size(10.dp))
+                IconChip(icon)
+                Spacer(Modifier.size(12.dp))
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
             content()
         }
+    }
+}
+
+/** A section icon set in a softly-lit rounded tile — gives each card header depth and a focal point. */
+@Composable
+private fun IconChip(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Brush.linearGradient(listOf(Accent.copy(alpha = 0.30f), Accent.copy(alpha = 0.08f)))),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = AccentSoft,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
 
@@ -171,16 +203,32 @@ private fun AudioSection(appState: AppState) {
             Text(if (appState.managerInstalled) "Reinstall Manager" else "Install Manager")
         }
 
-        // 2. Enable the engine: a runtime toggle over the PServer binder.
+        // 2. Enable the engine: a runtime toggle over the PServer binder, set in its own tile.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                if (appState.jdspEnabled) "Engine on" else "Engine off",
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(
+                            if (appState.jdspEnabled) Accent
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        ),
+                )
+                Spacer(Modifier.size(12.dp))
+                Text(
+                    if (appState.jdspEnabled) "Engine on" else "Engine off",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
             Switch(
                 checked = appState.jdspEnabled,
                 // Enabling the engine is pointless until the Manager app is installed.
@@ -256,9 +304,10 @@ private fun DisplaySection(appState: AppState) {
 
         Text(
             "${(appState.saturation * 100).roundToInt()}%",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.displaySmall.copy(
+                brush = Brush.linearGradient(listOf(AccentSoft, Accent)),
+                fontWeight = FontWeight.Bold,
+            ),
         )
 
         Slider(
