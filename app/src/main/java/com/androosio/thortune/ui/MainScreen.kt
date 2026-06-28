@@ -1,7 +1,10 @@
 package com.androosio.thortune.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import com.androosio.thortune.utils.JdspUtils
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
@@ -189,7 +195,8 @@ private fun AudioSection(appState: AppState) {
             enabled = appState.managerInstalled,
             onClick = {
                 if (!appState.openManager()) {
-                    Toast.makeText(context, "JamesDSP Manager is not installed", Toast.LENGTH_SHORT).show()
+                    // The rootless Manager only exposes its UI while the engine is running.
+                    Toast.makeText(context, "Turn the engine on first to open JamesDSP", Toast.LENGTH_SHORT).show()
                 }
             },
         ) {
@@ -303,10 +310,6 @@ private fun SettingsSection(appState: AppState) {
         }
     }
 
-    SectionCard("Device", Icons.Filled.Bolt) {
-        StatusRow("Privileged access (PServer)", if (appState.hasPServer) "Available" else "Not found", appState.hasPServer)
-    }
-
     SectionCard("About", Icons.Filled.Settings) {
         StatusRow("Version", versionName, true)
         Text(
@@ -314,6 +317,44 @@ private fun SettingsSection(appState: AppState) {
                 "GPLv2.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LinkRow(Icons.Filled.Code, "Source code", "github.com/androosio/thortune", "https://github.com/androosio/thortune")
+        LinkRow(Icons.Filled.Coffee, "Buy me a coffee", "buymeacoffee.com/androosio", "https://buymeacoffee.com/androosio")
+    }
+}
+
+@Composable
+private fun LinkRow(icon: ImageVector, label: String, subtitle: String, url: String) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }.onFailure {
+                    Toast.makeText(context, "No app available to open the link", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.size(14.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.bodyLarge)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
         )
     }
 }

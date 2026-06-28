@@ -2,6 +2,7 @@ package com.androosio.thortune.utils
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
@@ -39,16 +40,20 @@ object JdspUtils {
     fun disableJdsp(context: Context): Boolean =
         RootUtils.runRootScript(context, "jdsp.disable.sh") != null
 
-    /**
-     * True when the JamesDSP Manager is actually present **and usable** — i.e. it has a launchable
-     * activity. We deliberately don't use a bare `getPackageInfo` here: a package record can exist
-     * while the app is disabled or its launcher is hidden (seen in the wild with the rootless
-     * JamesDSP build), in which case it reports "installed" yet can't be opened and the engine
-     * can't be configured. Launchability is the honest signal, so the UI gates on this.
-     */
-    fun isManagerInstalled(context: Context): Boolean = launchIntent(context) != null
+    /** True when the JamesDSP Manager package is installed (regardless of whether it's openable). */
+    fun isManagerInstalled(context: Context): Boolean = try {
+        context.packageManager.getPackageInfo(JDSP_PACKAGE_NAME, 0)
+        true
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
 
-    /** Resolve the Manager's launch intent, or null if it isn't installed/enabled/launchable. */
+    /**
+     * Resolve the Manager's launch intent, or null if it can't currently be opened. The rootless
+     * JamesDSP only exposes a launchable activity while its engine/service is running, so this is
+     * null when the engine is off even though the package is installed — hence it gates the "Open"
+     * action only, not install/engine state.
+     */
     private fun launchIntent(context: Context): Intent? {
         val pm = context.packageManager
         pm.getLaunchIntentForPackage(JDSP_PACKAGE_NAME)?.let { return it }
