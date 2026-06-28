@@ -44,10 +44,18 @@ object JdspUtils {
     fun importPresetIntoManager(context: Context): Boolean {
         if (!copyRecommendedPreset(context)) return false
         // JamesDSP copies the imported file into its own Presets folder but doesn't create that
-        // folder first, so the import fails with ENOENT on a fresh install. Pre-create it (and the
-        // Liveprog folder presets may reference) over the root channel. Harmless if they exist.
+        // folder, so the import fails with ENOENT on a fresh install. Pre-create it (and the
+        // Liveprog folder presets may reference) over the root channel. Because root creates them
+        // owned by root — which the Manager's own uid then can't write to (EACCES, especially after
+        // a reinstall changes its uid) — make them world-writable so the Manager can import.
         val filesDir = "/storage/emulated/0/Android/data/$JDSP_PACKAGE_NAME/files"
-        RootUtils.runRootCommand(context, "mkdir -p $filesDir/Presets $filesDir/Liveprog")
+        RootUtils.runRootCommand(
+            context,
+            "mkdir -p $filesDir/Presets $filesDir/Liveprog; " +
+                "chmod 0777 $filesDir $filesDir/Presets $filesDir/Liveprog; " +
+                // Pre-grant notifications so JamesDSP's first-run prompt can't pop over the import.
+                "pm grant $JDSP_PACKAGE_NAME android.permission.POST_NOTIFICATIONS",
+        )
         val file = File(FileUtils.getPathDownload("/$RECOMMENDED_PRESET_FILENAME"))
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW)
