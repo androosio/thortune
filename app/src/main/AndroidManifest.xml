@@ -14,6 +14,9 @@
         <!-- Explicit visibility of the JamesDSP Manager so install-state detection
              (getPackageInfo / getLaunchIntentForPackage) is reliable on Android 11+. -->
         <package android:name="james.dsp" />
+        <!-- Mainstream rootless JamesDSP: visibility so we can warn when it's already installed
+             (ThorTune drives james.dsp, not this package). -->
+        <package android:name="me.timschneeberger.rootlessjamesdsp" />
     </queries>
 
     <application

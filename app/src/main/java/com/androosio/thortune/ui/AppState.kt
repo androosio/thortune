@@ -40,6 +40,21 @@ class AppState(private val context: Context) {
     var managerInstalled by mutableStateOf(JdspUtils.isManagerInstalled(context))
         private set
 
+    /**
+     * The mainstream rootless JamesDSP is installed alongside ours. ThorTune drives only its own
+     * bundled `james.dsp` build, so this is a heads-up that two engines could fight over the global
+     * audio session — surfaced as a warning, not an error.
+     */
+    var conflictingManagerInstalled by mutableStateOf(JdspUtils.isConflictingManagerInstalled(context))
+        private set
+
+    /**
+     * The installed `james.dsp` is signed with a different certificate than our bundled APK, so the
+     * system installer will reject our (re)install until the existing copy is uninstalled.
+     */
+    var managerSignatureMismatch by mutableStateOf(JdspUtils.isManagerSignatureMismatch(context))
+        private set
+
     /** Whether the live quick-controls panel is mirrored onto the Thor's lower screen. */
     var secondaryPanelEnabled by mutableStateOf(AppSettings.getSecondaryPanelEnabled(prefs))
         private set
@@ -52,6 +67,8 @@ class AppState(private val context: Context) {
     /** Re-check install state — call when the app returns to the foreground. */
     fun refreshInstallState() {
         managerInstalled = JdspUtils.isManagerInstalled(context)
+        conflictingManagerInstalled = JdspUtils.isConflictingManagerInstalled(context)
+        managerSignatureMismatch = JdspUtils.isManagerSignatureMismatch(context)
     }
 
     // When the user toggles here, suppress the JamesDSP-state poller briefly: the engine takes a
