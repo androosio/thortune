@@ -1,6 +1,6 @@
 # Contributing
 
-## Commit messages — Conventional Commits
+## Commit messages - Conventional Commits
 
 This repo uses [Conventional Commits](https://www.conventionalcommits.org). The commit **type**
 drives both the changelog and the next version number, so it matters:
@@ -32,9 +32,9 @@ git config core.hooksPath .githooks      # validate commit messages
 git config commit.template .gitmessage   # prefill the template when committing
 ```
 
-The `commit-msg` hook is dependency-free POSIX sh — it only validates the header grammar.
+The `commit-msg` hook is dependency-free POSIX sh - it only validates the header grammar.
 
-## Releases — automated
+## Releases - automated
 
 You don't tag or write changelogs by hand. The
 [`release-please`](.github/workflows/release-please.yml) workflow runs on every push to `main`:

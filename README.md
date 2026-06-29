@@ -1,64 +1,58 @@
-# ⚡ThorTune
+# ⚡ ThorTune
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](LICENSE)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/androosio)
 
-A minimal Android app for the AYN **Thor**, It bundles two essential system tweaks behind one UI:
+**Better sound and better-looking screens for your AYN Thor. One clean app, no rooting required.**
 
-- **Display saturation** — adjust the panel's colour intensity through SurfaceFlinger.
-- **JamesDSP** — the [JamesDSP](https://github.com/Audio4Linux/JDSP4Linux) system-wide audio
-  DSP, wired into the Android audio effect chain.
+ThorTune gives your Thor two upgrades that normally take fiddly manual setup:
 
-It bundles Tim Schneeberger's "rootfull" **JamesDSP Manager** fork (package `james.dsp`)
-plus the native engine and the audio-effects configuration. It combines two earlier
-single-purpose apps: the JamesDSP extraction from
-[o2ptweaks.app](https://github.com/FeralAI/o2ptweaks.app) (based on
-[jdsp4rp5.app](https://github.com/kokoko3k/jdsp4rp5.app) by kokoko3k) and the saturation
-control from ThorSaturation (derived from [OdinTools](https://github.com/langerhans/OdinTools)).
+- 🎨 **Richer screen colours** - dial in the colour intensity of both screens with a single
+  slider. The stock screens are too saturated; a touch less saturation looks more natural.
+- 🔊 **Bigger, clearer audio** - a system-wide equaliser and audio engine (JamesDSP) that
+  makes the Thor's speakers sound dramatically better, with a ready-made preset tuned for the
+  device.
 
-## How it works
+Both screens get a control panel: the main app on the top screen, and a live quick-controls
+panel on the lower screen so you can tweak things without leaving your game.
 
-**Display saturation** persists via the `persist.sys.sf.color_saturation` system property
-(read by SurfaceFlinger at boot) and is also applied immediately via a runtime SurfaceFlinger
-transaction. `BootReceiver` re-issues the runtime call as a belt-and-braces fallback.
+<p align="center">
+  <img src="docs/thor-device.jpg" alt="ThorTune running on an AYN Thor" width="48%">
+  &nbsp;
+  <img src="docs/app-screenshot.jpg" alt="ThorTune app - Display tab and lower-screen quick controls" width="48%">
+</p>
 
-**JamesDSP** runs through the manufacturer's PServer binder — there's no `su` and no Magisk
-module (nobody roots the Thor). Each boot, `BootReceiver` runs `jdsp.enable.sh`, which
-bind-mounts the JamesDSP `audio_effects.conf` over the system config and restarts the audio
-servers. Toggle it with the in-app switch.
+## Getting started
 
-## Usage
+1. **Download and install ThorTune** from the [releases page](https://github.com/androosio/thortune/releases), then open it. Allow the notification permission when asked.
+2. **Set the screen colour** - go to the **Display** tab and drag the slider. **100% is stock**;
+   **80% is recommended**. Changes apply instantly and stick after a reboot.
+3. **Set up the audio** - go to the **Audio** tab and follow the on-screen steps:
+   - Install **JamesDSP Manager** (the audio engine ThorTune drives) - tap the button and run
+     through the standard installer.
+   - **Turn on the engine** with the switch.
+   - **Add the recommended preset** - tap the button, then choose **Import and activate** in
+     JamesDSP. This loads Joey's Retro Handhelds tuning made for the Thor's speakers. (A copy is
+     also saved to your Downloads.)
+4. **Lower-screen panel** - the quick-controls panel on the bottom screen lets you toggle the
+   audio engine and switch saturation presets on the fly. You can turn it off in **Settings**.
 
-1. Install and launch the app; allow the notification permission.
-2. **Audio** tab → **Install JamesDSP Manager**, complete the system installer, then open it
-   once (optionally importing the recommended preset copied to your Downloads folder). Enable
-   the engine with the **JamesDSP** switch.
-3. **Display** tab → drag the slider to set saturation (100% is stock; 80% is recommended).
-4. **Settings** tab → toggle the lower-screen quick-controls panel and check device support.
+That's it. Your settings survive reboots, so this is a set-it-and-forget-it install.
 
-On the Thor's **lower screen**, a live quick-controls panel mirrors the engine toggle and
-saturation presets so you can tweak both without leaving whatever's on the top screen. It
-shares state with the main UI, so a change on either screen updates the other instantly.
+## Credits
 
-## Supported devices
+ThorTune builds on the work of others - it bundles Tim Schneeberger's JamesDSP Manager fork and
+combines the JamesDSP setup from [o2ptweaks.app](https://github.com/FeralAI/o2ptweaks.app)
+(based on [jdsp4rp5.app](https://github.com/kokoko3k/jdsp4rp5.app) by kokoko3k) with a saturation
+control derived from [OdinTools](https://github.com/langerhans/OdinTools). The recommended audio
+preset is based on [Joey's Retro Handhelds amazing video](https://www.youtube.com/watch?v=kk5Q4DtMrME).
 
-Any device whose manufacturer provides the "Run script as root" / PServer service. JamesDSP
-additionally requires a Snapdragon `kalama` (8 Gen 2) audio config — confirmed on the AYN
-Odin2 Portal and AYN Thor. Other SKUs may need a different `audio_effects` config under
-`app/src/main/assets/app/support/conf_files/`. The quick-controls panel appears only on
-devices that expose a secondary presentation display (e.g. the Thor's lower screen).
+## For developers
 
-## Building
-
-```bash
-./gradlew assembleDebug      # debug APK
-./gradlew assembleRelease    # release APK
-```
-
-Requires an Android SDK (set `sdk.dir` in `local.properties`). min SDK 33, target/compile 35,
-JVM target 17.
+Curious how it works, or want to build it yourself? See **[docs/TECHNICAL.md](docs/TECHNICAL.md)**.
 
 ## License
 
-GNU General Public License v2.0 — see [LICENSE](LICENSE). Inherited from the upstream
-projects above.
+GNU General Public License v2.0 - see [LICENSE](LICENSE). Inherited from the upstream projects
+above.
+</content>

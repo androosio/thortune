@@ -10,3 +10,6 @@ local.properties
 
 # Serena tooling
 .serena/
+
+# Local-only AI assistant instructions
+CLAUDE.md
