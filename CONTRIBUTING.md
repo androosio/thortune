@@ -51,3 +51,31 @@ No release PR appears until there's at least one `feat`/`fix` (or breaking) comm
 release.
 
 Preview the changelog locally any time with `git cliff` (or `git cliff -o CHANGELOG.md`).
+
+### Release signing (one-time setup)
+
+The publish job signs the APK from environment variables backed by GitHub secrets. The keystore
+is your permanent upgrade identity, so generate it once, **back it up somewhere safe, and never
+commit it** (`*.jks` is gitignored). A local `assembleRelease` without these set still works — it
+just produces an unsigned APK.
+
+1. Generate a keystore (pick your own passwords; keep the alias):
+
+   ```sh
+   keytool -genkeypair -v -keystore release.jks -alias thortune \
+     -keyalg RSA -keysize 2048 -validity 10000 \
+     -dname "CN=ThorTune, O=androosio, C=GB"
+   ```
+
+2. Add the four secrets to the repo (the keystore goes in base64-encoded):
+
+   ```sh
+   gh secret set KEYSTORE_BASE64   < <(base64 -w0 release.jks)
+   gh secret set KEYSTORE_PASSWORD                 # the store password from step 1
+   gh secret set KEY_ALIAS         --body thortune # the alias from step 1
+   gh secret set KEY_PASSWORD                      # the key password from step 1
+   ```
+
+That's it — the next release builds a signed APK. To rotate the key later, regenerate and re-set
+the secrets, but note: a release signed with a different key can't upgrade installs of the old one,
+so users would have to uninstall/reinstall.

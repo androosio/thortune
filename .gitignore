@@ -13,3 +13,7 @@ local.properties
 
 # Local-only AI assistant instructions
 CLAUDE.md
+
+# Signing keystores — never commit these
+*.jks
+*.keystore

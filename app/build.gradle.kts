@@ -25,6 +25,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing is driven entirely by environment variables, set as GitHub Actions secrets
+    // in the release workflow (see CONTRIBUTING.md). When KEYSTORE_FILE is absent — i.e. any local
+    // `assembleRelease` without the secrets — the release build stays unsigned and still succeeds,
+    // so the keystore never has to live in the repo or on a dev machine.
+    val keystoreFile = System.getenv("KEYSTORE_FILE")
+    signingConfigs {
+        if (keystoreFile != null) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
@@ -33,6 +49,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Sign only when the keystore env is present; otherwise leave it unsigned.
+            signingConfig = if (keystoreFile != null) signingConfigs.getByName("release") else null
         }
     }
 
