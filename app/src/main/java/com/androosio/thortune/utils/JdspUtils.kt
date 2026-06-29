@@ -1,6 +1,7 @@
 package com.androosio.thortune.utils
 
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,6 +11,19 @@ import java.io.File
 
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
+
+    // JamesDSP's own master power control. Its in-app switch, its Quick Settings tile, and this
+    // broadcast all funnel through the same `toggleEnginePower` path and persist the same
+    // `powered_on` preference — so driving the engine through this broadcast keeps ThorTune's
+    // toggle in lockstep with JamesDSP's own controls (instead of fighting them). The receiver is
+    // exported and unprotected; the boolean extra is applied verbatim (true = on, false = off).
+    private const val POWER_ACTION = "me.timschneeberger.rootlessjamesdsp.SET_POWER_STATE"
+    private const val POWER_EXTRA = "rootlessjamesdsp.enabled"
+    private const val POWER_RECEIVER = "me.timschneeberger.rootlessjamesdsp.receiver.PowerStateReceiver"
+
+    /** File holding JamesDSP's persisted app preferences, including `powered_on`. */
+    private val PREFS_PATH = "/data/data/$JDSP_PACKAGE_NAME/shared_prefs/application.xml"
+    private val POWERED_ON_REGEX = Regex("""name="powered_on"\s+value="(true|false)"""")
 
     /**
      * Copy the bundled JamesDSP preset backup into the Downloads folder so the user can
@@ -80,14 +94,49 @@ object JdspUtils {
     }
 
     /**
-     * Temporary-root path: mount the JamesDSP audio_effects config and start the engine.
-     * Returns true if the root operation was dispatched (the PServer binder accepted it).
+     * Turn the engine on. The root script ensures the effect is loaded (mounting the
+     * audio_effects config + restarting audioserver once per boot, on its heavy path), launches
+     * the Manager's engine activity to attach the effect on the global session, and then powers
+     * it on via JamesDSP's own SET_POWER_STATE broadcast. It must stay in the root script (not an
+     * app-side intent): when toggled from the backgrounded companion panel, only the root `am`
+     * can legally start the engine activity, and starting it that way sidesteps the
+     * background-foreground-service-start restriction. Returns true if the binder accepted it.
      */
     fun enableJdsp(context: Context): Boolean =
         RootUtils.runRootScript(context, "jdsp.enable.sh") != null
 
-    fun disableJdsp(context: Context): Boolean =
-        RootUtils.runRootScript(context, "jdsp.disable.sh") != null
+    /**
+     * Turn the engine off by asking JamesDSP to power down via its own mechanism — the same one
+     * its switch and QS tile use. This is a plain broadcast (no root, no background restriction):
+     * it bypasses the attached effect and leaves the Manager process running, exactly like
+     * flipping JamesDSP's own switch, so the two never disagree. (Contrast the old force-stop,
+     * which killed the process but left JamesDSP's own `powered_on` stuck at true.)
+     */
+    fun disableJdsp(context: Context): Boolean {
+        setManagerPower(context, false)
+        return true
+    }
+
+    /** Broadcast a power on/off request to JamesDSP's exported PowerStateReceiver. */
+    fun setManagerPower(context: Context, on: Boolean) {
+        val intent = Intent(POWER_ACTION)
+            .setComponent(ComponentName(JDSP_PACKAGE_NAME, POWER_RECEIVER))
+            .putExtra(POWER_EXTRA, on)
+        context.sendBroadcast(intent)
+    }
+
+    /**
+     * Read JamesDSP's persisted `powered_on` state (root `cat` of its prefs), so ThorTune can
+     * reflect changes made through JamesDSP's own switch or Quick Settings tile — there is no
+     * cross-process change event to subscribe to. Returns null if the state can't be determined
+     * (no root, prefs not written yet, Manager not installed).
+     */
+    fun readManagerPowerState(context: Context): Boolean? {
+        // grep (not cat): the PServer channel only returns the command's first output line, so we
+        // filter down to the single `powered_on` line rather than the whole multi-line prefs file.
+        val line = RootUtils.runRootCommand(context, "grep powered_on $PREFS_PATH") ?: return null
+        return POWERED_ON_REGEX.find(line)?.groupValues?.get(1)?.toBoolean()
+    }
 
     /** True when the JamesDSP Manager package is installed (regardless of whether it's openable). */
     fun isManagerInstalled(context: Context): Boolean = try {

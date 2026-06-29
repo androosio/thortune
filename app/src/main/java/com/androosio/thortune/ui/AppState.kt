@@ -1,6 +1,7 @@
 package com.androosio.thortune.ui
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,11 +54,17 @@ class AppState(private val context: Context) {
         managerInstalled = JdspUtils.isManagerInstalled(context)
     }
 
+    // When the user toggles here, suppress the JamesDSP-state poller briefly: the engine takes a
+    // moment to apply and persist the new `powered_on`, and a poll landing in that window would
+    // read the stale value and visibly flip the switch back.
+    private var lastLocalToggleAt = 0L
+
     fun toggleJdsp(enabled: Boolean) {
         // Flip the switch and persist immediately so the UI feels instant; the actual engine
         // enable/disable (a blocking root operation) runs on a background thread.
         jdspEnabled = enabled
         AppSettings.setJdspEnabled(prefs, enabled)
+        lastLocalToggleAt = SystemClock.elapsedRealtime()
         scope.launch {
             val ok = withContext(Dispatchers.IO) {
                 if (enabled) JdspUtils.enableJdsp(context) else JdspUtils.disableJdsp(context)
@@ -67,6 +74,23 @@ class AppState(private val context: Context) {
                 jdspEnabled = !enabled
                 AppSettings.setJdspEnabled(prefs, !enabled)
             }
+        }
+    }
+
+    /**
+     * Reconcile our toggle with JamesDSP's actual power state, so changes made through JamesDSP's
+     * own switch or its Quick Settings tile show up here too. Driven by a poll while a ThorTune
+     * surface is on-screen (there is no change event to subscribe to). No-op without root or the
+     * Manager; skipped right after a local toggle so we don't read a not-yet-persisted value.
+     */
+    suspend fun syncJdspPowerFromManager() {
+        if (!hasPServer || !managerInstalled) return
+        if (SystemClock.elapsedRealtime() - lastLocalToggleAt < LOCAL_TOGGLE_GRACE_MS) return
+        val actual = withContext(Dispatchers.IO) { JdspUtils.readManagerPowerState(context) } ?: return
+        if (actual != jdspEnabled) {
+            // Mirror the external change without re-driving the engine (that would echo back).
+            jdspEnabled = actual
+            AppSettings.setJdspEnabled(prefs, actual)
         }
     }
 
@@ -107,4 +131,9 @@ class AppState(private val context: Context) {
     }
 
     fun resetSaturation() = applySaturation(AppSettings.DEFAULT_SATURATION)
+
+    private companion object {
+        /** Ignore polled JamesDSP state for this long after a local toggle (see [toggleJdsp]). */
+        const val LOCAL_TOGGLE_GRACE_MS = 2500L
+    }
 }

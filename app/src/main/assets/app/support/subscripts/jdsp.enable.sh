@@ -7,6 +7,28 @@ SOUNDFX_DIR=/vendor/lib/soundfx
 SOUNDFX_DIR64=/vendor/lib64/soundfx
 
 ENGINE="james.dsp/me.timschneeberger.rootlessjamesdsp.activity.EngineLauncherActivity"
+POWER_RX="james.dsp/me.timschneeberger.rootlessjamesdsp.receiver.PowerStateReceiver"
+POWER_ACT="me.timschneeberger.rootlessjamesdsp.SET_POWER_STATE"
+
+# Bring the engine up and powered on, in sync with JamesDSP's own controls.
+#
+# Two steps that mirror exactly what the Manager itself does on its switch / QS tile:
+#   1. Ensure the foreground service is running so the AudioEffect is attached on the global
+#      (session 0) mix. If the process is already alive we skip this — re-launching the engine
+#      activity would needlessly steal focus from whatever's in the foreground (e.g. a game on
+#      the top screen when toggling from the companion panel). Starting it via root `am` is also
+#      what lets this work while ThorTune is backgrounded (legal activity + foreground-service
+#      start).
+#   2. Power on via the SET_POWER_STATE broadcast. This is what guarantees "on" even if the user
+#      had previously switched JamesDSP off (which persists powered_on=false); a bare service
+#      start would leave it off. Harmless when already on.
+activate_engine() {
+  if ! pidof james.dsp >/dev/null 2>&1; then
+    am start $ENGINE
+    sleep 1
+  fi
+  am broadcast -a $POWER_ACT --ez rootlessjamesdsp.enabled true -n $POWER_RX
+}
 
 # --- Fast path: effect already loaded -------------------------------------------------
 #
@@ -16,11 +38,11 @@ ENGINE="james.dsp/me.timschneeberger.rootlessjamesdsp.activity.EngineLauncherAct
 # turning the DSP on/off is purely a matter of the app attaching/releasing that AudioEffect
 # — no audioserver restart needed. So if our effect library is already mounted into the
 # system soundfx dir (only our bind mount puts libjamesdsp.so there), we skip the heavy,
-# audioserver-restarting load and just (re)attach the engine. This is what makes repeated
+# audioserver-restarting load and just (re)activate the engine. This is what makes repeated
 # toggles glitch-free for whatever audio is currently playing.
 if [ -f "$SOUNDFX_DIR64/libjamesdsp.so" ] && [ -f "$SOUNDFX_DIR/libjamesdsp.so" ]; then
   echo "JamesDSP effect already loaded; activating engine only"
-  am start $ENGINE
+  activate_engine
   exit 0
 fi
 
@@ -135,5 +157,5 @@ pm enable james.dsp
 # flashes an attach-error toast (JDSP load fail, session=0).
 sleep 3
 
-# Start JamesDSP app to attach the effect on the global session and enable processing
-am start $ENGINE
+# Attach the effect on the global session and power it on.
+activate_engine

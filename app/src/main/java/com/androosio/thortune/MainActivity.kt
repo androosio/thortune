@@ -13,6 +13,7 @@ import com.androosio.thortune.secondary.CompanionPresentation
 import com.androosio.thortune.ui.AppState
 import com.androosio.thortune.ui.MainScreen
 import com.androosio.thortune.ui.theme.AppTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +41,20 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 snapshotFlow { appState.secondaryPanelEnabled }.collect { refreshCompanionPanel() }
+            }
+        }
+
+        // Keep our engine toggle in step with JamesDSP's own switch / Quick Settings tile.
+        // JamesDSP emits no cross-process change event, so we poll its persisted state while a
+        // ThorTune surface is on-screen — the main UI (STARTED) or the companion panel, which can
+        // stay up on the lower screen while another app is foreground (STOPPED but panel showing).
+        // lifecycleScope cancels this at onDestroy.
+        lifecycleScope.launch {
+            while (true) {
+                val visible = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) ||
+                    presentation?.isShowing == true
+                if (visible) appState.syncJdspPowerFromManager()
+                delay(JDSP_SYNC_INTERVAL_MS)
             }
         }
     }
@@ -83,5 +98,10 @@ class MainActivity : ComponentActivity() {
     private fun dismissCompanionPanel() {
         presentation?.let { runCatching { it.dismiss() } }
         presentation = null
+    }
+
+    private companion object {
+        /** How often to poll JamesDSP's power state while a ThorTune surface is visible. */
+        const val JDSP_SYNC_INTERVAL_MS = 2000L
     }
 }
