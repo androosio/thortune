@@ -2,6 +2,7 @@ package com.androosio.thortune.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.content.Context
 import android.widget.Toast
 import com.androosio.thortune.utils.JdspUtils
 import androidx.compose.foundation.BorderStroke
@@ -198,6 +199,34 @@ private fun AudioSection(appState: AppState) {
             )
         }
 
+        // Another JamesDSP already owns the system audio session and ThorTune can't take over from
+        // it in-app: either a separate rootless build (two engines would fight over the same output)
+        // or a differently-signed james.dsp the installer won't let us update over. ThorTune can't
+        // uninstall it for them (no delete-packages permission), so in both cases we hide the whole
+        // setup flow, point them at Android Settings, and offer the one thing still useful here —
+        // exporting the recommended preset to import into their existing JamesDSP.
+        if (appState.conflictingManagerInstalled) {
+            AudioBlockedCard(
+                "Another JamesDSP app is already installed and controls the system audio. " +
+                    "ThorTune can only manage its own bundled build, so this setup is hidden. " +
+                    "To let ThorTune manage JamesDSP instead, uninstall the other app from " +
+                    "Android Settings first.",
+                appState,
+                context,
+            )
+            return@SectionCard
+        }
+        if (appState.managerSignatureMismatch) {
+            AudioBlockedCard(
+                "A different build of JamesDSP is already installed and ThorTune can't update " +
+                    "over it, so this setup is hidden. To let ThorTune manage JamesDSP instead, " +
+                    "uninstall the existing copy from Android Settings first.",
+                appState,
+                context,
+            )
+            return@SectionCard
+        }
+
         // 1. Install (or reinstall) the Manager app — required before the engine is useful.
         Step(1, "Install the Manager", done = appState.managerInstalled) {
             FilledTonalButton(
@@ -305,6 +334,50 @@ private fun AudioSection(appState: AppState) {
                 Text("Uninstall JamesDSP")
             }
         }
+    }
+}
+
+/**
+ * Shown in place of the whole JamesDSP setup flow when another JamesDSP owns the audio session and
+ * ThorTune can't take over in-app (a conflicting rootless build, or a differently-signed
+ * james.dsp). Explains [message] (which directs the user to Android Settings to remove it) and
+ * offers the only useful action left: exporting the recommended preset to import into their
+ * existing JamesDSP.
+ */
+@Composable
+private fun AudioBlockedCard(message: String, appState: AppState, context: Context) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+    }
+    Text(
+        "Prefer to keep your current JamesDSP? Save ThorTune's recommended preset and import it " +
+            "there with \"Import and activate\".",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    FilledTonalButton(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = {
+            val ok = appState.copyRecommendedPreset()
+            Toast.makeText(
+                context,
+                if (ok) "Saved ${JdspUtils.RECOMMENDED_PRESET_FILENAME} to Downloads"
+                else "Couldn't save the preset",
+                Toast.LENGTH_LONG,
+            ).show()
+        },
+    ) {
+        Text("Save preset to Downloads")
     }
 }
 

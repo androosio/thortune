@@ -4,13 +4,25 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
 import androidx.core.content.FileProvider
 import java.io.File
+import java.security.MessageDigest
 
 object JdspUtils {
     const val JDSP_PACKAGE_NAME = "james.dsp"
+
+    /**
+     * The mainstream "rootless JamesDSP" build (F-Droid / GitHub) ships under its own package name,
+     * distinct from our bundled [JDSP_PACKAGE_NAME] repackage. ThorTune only detects and drives
+     * `james.dsp`, so a pre-existing install of this package is invisible to the rest of the app —
+     * we surface it as a conflict so the user doesn't end up running two engines on the same global
+     * audio session. See [isConflictingManagerInstalled].
+     */
+    const val ROOTLESS_PACKAGE_NAME = "me.timschneeberger.rootlessjamesdsp"
 
     // JamesDSP's own master power control. Its in-app switch, its Quick Settings tile, and this
     // broadcast all funnel through the same `toggleEnginePower` path and persist the same
@@ -139,11 +151,70 @@ object JdspUtils {
     }
 
     /** True when the JamesDSP Manager package is installed (regardless of whether it's openable). */
-    fun isManagerInstalled(context: Context): Boolean = try {
-        context.packageManager.getPackageInfo(JDSP_PACKAGE_NAME, 0)
+    fun isManagerInstalled(context: Context): Boolean = isInstalled(context, JDSP_PACKAGE_NAME)
+
+    /**
+     * True when the mainstream rootless JamesDSP ([ROOTLESS_PACKAGE_NAME]) is installed. ThorTune
+     * doesn't drive that package — it only knows [JDSP_PACKAGE_NAME] — so this is purely a heads-up
+     * that another JamesDSP engine is present and could contend for the same global audio session.
+     */
+    fun isConflictingManagerInstalled(context: Context): Boolean =
+        isInstalled(context, ROOTLESS_PACKAGE_NAME)
+
+    private fun isInstalled(context: Context, packageName: String): Boolean = try {
+        context.packageManager.getPackageInfo(packageName, 0)
         true
     } catch (e: PackageManager.NameNotFoundException) {
         false
+    }
+
+    /** Filename of the bundled Manager APK, staged into filesDir by [MainApplication]. */
+    private const val APK_ASSET_NAME = "JamesDSPManagerThePBone.apk"
+
+    /**
+     * True when `james.dsp` is already installed but signed with a different certificate than our
+     * bundled APK. In that state the system installer rejects our APK with
+     * INSTALL_FAILED_UPDATE_INCOMPATIBLE, so the "Reinstall Manager" button silently does nothing —
+     * the user has to uninstall the existing copy first.
+     *
+     * Conservative by design: returns false when the package isn't installed, when the signatures
+     * match (including a shared rotation lineage), or when either signature can't be read — we'd
+     * rather stay quiet than cry wolf over a mismatch we're not sure about.
+     */
+    fun isManagerSignatureMismatch(context: Context): Boolean {
+        val pm = context.packageManager
+        val installed = signingCerts(
+            try {
+                pm.getPackageInfo(JDSP_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES)
+            } catch (e: PackageManager.NameNotFoundException) {
+                return false
+            },
+        ) ?: return false
+
+        val bundledApk = File(context.filesDir, "app/$APK_ASSET_NAME")
+        if (!bundledApk.exists()) return false
+        val bundled = signingCerts(
+            pm.getPackageArchiveInfo(bundledApk.path, PackageManager.GET_SIGNING_CERTIFICATES),
+        ) ?: return false
+
+        // No shared certificate (current or historical) means the installer can't update across
+        // them: that's the mismatch we warn about.
+        return installed.intersect(bundled).isEmpty()
+    }
+
+    /** SHA-256 digests of a package's signing certificates, or null if none can be read. */
+    private fun signingCerts(info: PackageInfo?): Set<String>? {
+        val signingInfo = info?.signingInfo ?: return null
+        val sigs = if (signingInfo.hasMultipleSigners()) {
+            signingInfo.apkContentsSigners
+        } else {
+            // History covers the current cert plus any it was rotated from, so a lineage match counts.
+            signingInfo.signingCertificateHistory
+        }
+        if (sigs.isNullOrEmpty()) return null
+        val digest = MessageDigest.getInstance("SHA-256")
+        return sigs.map { digest.digest(it.toByteArray()).joinToString("") { b -> "%02x".format(b) } }
+            .toSet()
     }
 
     /**
@@ -180,9 +251,14 @@ object JdspUtils {
         ApkUtils.installApkFromAssets(context, "JamesDSPManagerThePBone.apk", "app")
     }
 
-    /** Launch the system uninstall dialog for the JamesDSP Manager (user confirms). */
+    /**
+     * Open the JamesDSP Manager's App info page, where the user can uninstall it. We deliberately
+     * don't fire ACTION_DELETE: ThorTune holds neither REQUEST_DELETE_PACKAGES nor DELETE_PACKAGES,
+     * so the system installer refuses that intent and nothing happens. The App info page always
+     * works and puts the Uninstall button one tap away.
+     */
     fun uninstallJdspManager(context: Context) {
-        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$JDSP_PACKAGE_NAME"))
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$JDSP_PACKAGE_NAME"))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
