@@ -12,8 +12,15 @@ android {
         applicationId = "com.androosio.thortune"
         minSdk = 33
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+
+        // Single source of truth for the app version. release-please bumps the string on the
+        // annotated line below (see release-please-config.json / CONTRIBUTING.md); versionCode is
+        // derived from it so the integer is never hand-maintained. 1.2.3 -> 10203, keeping codes
+        // monotonic as the version climbs.
+        val appVersion = "1.0.0" // x-release-please-version
+        val semver = appVersion.substringBefore("-").split(".").map { it.toInt() }
+        versionName = appVersion
+        versionCode = semver[0] * 10000 + semver[1] * 100 + semver[2]
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

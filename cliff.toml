@@ -1,0 +1,53 @@
+# git-cliff configuration — git-cliff is the sole changelog author for this repo.
+# release-please handles versioning/tagging/releases (with skip-changelog), and the release
+# workflow calls git-cliff to render both CHANGELOG.md and each GitHub Release's body.
+# See CONTRIBUTING.md. Regenerate locally with: git cliff -o CHANGELOG.md
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to ThorTune are documented here. This file is generated from
+[Conventional Commits](https://www.conventionalcommits.org) by git-cliff.
+"""
+body = """
+{% if version %}\
+## {{ version | trim_start_matches(pat="v") }} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## Unreleased
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}\
+- {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}\n
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+protect_breaking_commits = true
+filter_commits = false
+tag_pattern = "v[0-9]*"
+topo_order = false
+sort_commits = "oldest"
+commit_parsers = [
+  { message = "^chore: update changelog", skip = true },
+  { message = "^chore\\(release\\):", skip = true },
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactor" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^style", group = "Styling" },
+  { message = "^test", group = "Testing" },
+  { message = "^revert", group = "Reverts" },
+  { message = "^build", group = "Build System" },
+  { message = "^ci", group = "Continuous Integration" },
+  { message = "^chore", group = "Miscellaneous" },
+  { body = ".*security", group = "Security" },
+]

@@ -1,0 +1,11 @@
+# type(scope): subject   — imperative, <=50 chars, no trailing period
+#   add ! before the colon for a breaking change, e.g. feat(audio)!: ...
+#
+# <blank line>
+# Body: what changed and WHY (wrap at ~72). Reference issues if any.
+#
+# Footer: BREAKING CHANGE: <description>   /   Refs #123
+#
+# types: feat fix docs style refactor perf test build ci chore revert
+#   feat  -> minor bump      fix -> patch bump      ! / BREAKING CHANGE -> major
+#   docs/style/refactor/perf/test/build/ci/chore -> no version bump (still in changelog)

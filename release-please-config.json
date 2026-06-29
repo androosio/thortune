@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "skip-changelog": true,
+      "draft": true,
+      "extra-files": [
+        "app/build.gradle.kts"
+      ]
+    }
+  }
+}
