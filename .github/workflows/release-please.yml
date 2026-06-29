@@ -62,6 +62,12 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease
 
+      - name: Verify APK is signed
+        run: |
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          "$apksigner" verify --verbose "$apk"
+
       - name: Render GitHub Release notes (this release only)
         uses: orhun/git-cliff-action@v4
         env:

@@ -17,3 +17,6 @@ CLAUDE.md
 # Signing keystores — never commit these
 *.jks
 *.keystore
+
+# Windows/WSL alternate-data-stream artifacts
+*:Zone.Identifier
