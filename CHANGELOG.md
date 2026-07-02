@@ -4,6 +4,17 @@ All notable changes to ThorTune are documented here. This file is generated from
 [Conventional Commits](https://www.conventionalcommits.org) by git-cliff.
 ## Unreleased
 
+### Bug Fixes
+- Dismiss lower-screen panel when the app leaves the foreground
+
+### Documentation
+- Add rendered app icon (PNG) for Obtainium catalog listing
+
+### Miscellaneous
+- Release 1.1.1
+
+## 1.1.0 - 2026-06-29
+
 ### Build System
 - Sign release APK in CI from keystore secrets
 
