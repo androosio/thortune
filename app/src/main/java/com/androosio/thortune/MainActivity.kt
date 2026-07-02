@@ -46,15 +46,15 @@ class MainActivity : ComponentActivity() {
 
         // Keep our engine toggle in step with JamesDSP's own switch / Quick Settings tile.
         // JamesDSP emits no cross-process change event, so we poll its persisted state while a
-        // ThorTune surface is on-screen — the main UI (STARTED) or the companion panel, which can
-        // stay up on the lower screen while another app is foreground (STOPPED but panel showing).
-        // lifecycleScope cancels this at onDestroy.
+        // ThorTune surface is on-screen. The companion panel is now tied to the activity lifecycle
+        // (dismissed in onStop), so "on-screen" is exactly STARTED — repeatOnLifecycle suspends the
+        // poll while stopped and resumes it on return.
         lifecycleScope.launch {
-            while (true) {
-                val visible = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) ||
-                    presentation?.isShowing == true
-                if (visible) appState.syncJdspPowerFromManager()
-                delay(JDSP_SYNC_INTERVAL_MS)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    appState.syncJdspPowerFromManager()
+                    delay(JDSP_SYNC_INTERVAL_MS)
+                }
             }
         }
     }
@@ -69,6 +69,14 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         displayManager.unregisterDisplayListener(displayListener)
+    }
+
+    // Tie the lower-screen panel to the app being foreground: pressing Home (or switching apps)
+    // stops the activity, so tear the panel down here instead of letting it linger on the lower
+    // screen until the process is force-stopped. It's re-shown from onResume on return.
+    override fun onStop() {
+        super.onStop()
+        dismissCompanionPanel()
     }
 
     override fun onDestroy() {
