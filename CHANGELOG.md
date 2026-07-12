@@ -2,6 +2,24 @@
 
 All notable changes to ThorTune are documented here. This file is generated from
 [Conventional Commits](https://www.conventionalcommits.org) by git-cliff.
+## 1.1.2 - 2026-07-12
+
+### Bug Fixes
+
+- Keep JamesDSP effect attached after sleep/boot (bg FGS-start block)
+
+### Continuous Integration
+
+- Fix changelog rendering the previous version's notes
+
+### Documentation
+
+- Add live total-downloads badge to README
+
+### Miscellaneous
+
+- Release 1.1.2 (#5)
+
 ## 1.1.1 - 2026-07-02
 
 ### Bug Fixes
