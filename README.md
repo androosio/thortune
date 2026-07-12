@@ -1,6 +1,7 @@
 # ⚡ ThorTune
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/androosio/thortune/total?logo=github&label=downloads&color=44cc11)](https://github.com/androosio/thortune/releases)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/androosio)
 
 **Better sound and better-looking screens for your AYN Thor. One clean app, no rooting required.**
