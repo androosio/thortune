@@ -10,25 +10,54 @@ ENGINE="james.dsp/me.timschneeberger.rootlessjamesdsp.activity.EngineLauncherAct
 POWER_RX="james.dsp/me.timschneeberger.rootlessjamesdsp.receiver.PowerStateReceiver"
 POWER_ACT="me.timschneeberger.rootlessjamesdsp.SET_POWER_STATE"
 
+# True when JamesDSP's AudioEffect currently exists on the audio server and is attached to an
+# output mix — whether it's powered on ("Enabled; Active") or bypassed ("Disabled; Active"),
+# since "Active" here reports *attachment*, not power. audioserver lists it under "Effects (N)"
+# with a non-zero "Attached to I/O handle". When the effect object has been destroyed the whole
+# descriptor is gone (Effects (0), handle 0) — that is the state we must recover from.
+effect_attached() {
+  dumpsys media.audio_policy 2>/dev/null \
+    | grep -iB1 'JamesDSP' \
+    | grep -q 'Attached to I/O handle: [1-9]'
+}
+
 # Bring the engine up and powered on, in sync with JamesDSP's own controls.
 #
 # Two steps that mirror exactly what the Manager itself does on its switch / QS tile:
-#   1. Ensure the foreground service is running so the AudioEffect is attached on the global
-#      (session 0) mix. If the process is already alive we skip this — re-launching the engine
-#      activity would needlessly steal focus from whatever's in the foreground (e.g. a game on
-#      the top screen when toggling from the companion panel). Starting it via root `am` is also
-#      what lets this work while ThorTune is backgrounded (legal activity + foreground-service
-#      start).
+#   1. Ensure the engine's foreground service is running AND its AudioEffect is attached on the
+#      global (session 0) mix. We skip the (re)launch only when the effect is genuinely attached —
+#      re-launching the engine activity would needlessly steal focus from whatever's in the
+#      foreground (e.g. a game on the top screen when toggling from the companion panel). A live
+#      james.dsp *process* is NOT sufficient: after a long suspend (e.g. overnight sleep) the
+#      audioserver can churn and destroy the session-0 effect while the process lingers. In that
+#      state a bare power broadcast can't recreate the effect — which is exactly why re-toggling
+#      from either ThorTune or JamesDSP's own switch appears to do nothing — so we force-stop the
+#      stale process and cold-start the engine to re-attach a fresh effect. force-stop is
+#      disruptive, but on this recovery path audio is already broken, and it's a no-op when the
+#      process is already gone. Starting via root `am` is also what lets this work while ThorTune
+#      is backgrounded (legal activity + foreground-service start).
 #   2. Power on via the SET_POWER_STATE broadcast. This is what guarantees "on" even if the user
 #      had previously switched JamesDSP off (which persists powered_on=false); a bare service
 #      start would leave it off. Harmless when already on.
 activate_engine() {
-  if ! pidof james.dsp >/dev/null 2>&1; then
+  if pidof james.dsp >/dev/null 2>&1 && effect_attached; then
+    : # Effect alive and attached — flipping power below is glitch-free; leave the process alone.
+  else
+    am force-stop james.dsp
     am start $ENGINE
-    sleep 1
+    sleep 2
   fi
   am broadcast -a $POWER_ACT --ez rootlessjamesdsp.enabled true -n $POWER_RX
 }
+
+# JamesDSP attaches its AudioEffect from a foreground service (RootAudioProcessorService). On
+# Android 12+ a backgrounded app cannot start a foreground service, so whenever the engine is
+# (re)launched while JamesDSP isn't in the foreground — at boot, from the companion panel, or after
+# waking from sleep — that FGS start is denied ("mAllowStartForeground false") and the effect never
+# attaches, leaving the DSP silently inert no matter how it's toggled. Apps exempt from battery
+# optimisation are allowed to start a foreground service from the background, so place JamesDSP on
+# the Doze allow-list. Idempotent and persists across reboots.
+dumpsys deviceidle whitelist +james.dsp >/dev/null 2>&1
 
 # --- Fast path: effect already loaded -------------------------------------------------
 #
