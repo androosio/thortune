@@ -6,6 +6,11 @@ name: release-please
 #      (skip-changelog + draft in release-please-config.json).
 #   2. The publish job then builds the APK, has git-cliff render the notes + CHANGELOG.md, attaches
 #      the APK, and flips the release to published.
+#   3. The reconcile job runs release-please once more *after* the release is published, so its
+#      "what's the next release?" calculation anchors on the freshly-published release instead of
+#      the draft it saw in step 1 (a draft has no tag and isn't recognised as the latest release,
+#      which otherwise makes step 1 mis-anchor on an older release and re-list already-released
+#      commits). See the job for details.
 # git-cliff is the only changelog author; release-please only versions/tags/releases.
 
 on:
@@ -109,3 +114,37 @@ jobs:
         run: |
           gh release edit "$TAG" --notes-file RELEASE_NOTES.md --draft=false
           gh release upload "$TAG" app/build/outputs/apk/release/*.apk --clobber
+
+  # Re-anchor the next-release PR after the release is published.
+  #
+  # release-please computes the *next* release PR in the same pass that creates the release for a
+  # just-merged release PR. On that pass the new release is still a DRAFT (the publish job above
+  # only flips it afterwards), and a draft GitHub release has no git tag and isn't recognised as
+  # "the latest release" — so release-please falls back to an older release and opens a bogus PR
+  # re-listing already-released commits. A corrected pass on its own won't retract that PR, so we
+  # close it first, then let release-please recompute against the now-published release: it opens a
+  # fresh, correctly-anchored PR only if something genuinely landed during the release run.
+  reconcile:
+    needs: [release-please, publish]
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Close stale draft-window release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          for n in $(gh pr list --repo "$GITHUB_REPOSITORY" \
+                       --head release-please--branches--main --state open \
+                       --json number --jq '.[].number'); do
+            gh pr close "$n" --repo "$GITHUB_REPOSITORY" --delete-branch \
+              --comment "Auto-closed: opened during the draft-release window (mis-anchored on an older release). Superseded once $TAG was published; release-please will reopen a correctly-anchored PR if anything is still unreleased."
+          done
+
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
